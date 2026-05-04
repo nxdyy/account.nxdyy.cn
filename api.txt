@@ -1,0 +1,205 @@
+📚 完整 API 文档
+🏗️ 系统架构总览
+PlainText
+
+
+
+
+三层权限体系┌─────────────────────────────────────────────────────┐│  角色权限树 (OR合并) → 用户个人覆盖 → 最终权限树     ││                      ↓                              ││               写入 JWT perms claim                    ││                      ↓                              ││            API资源映射表 (api_resources 表)            ││                      ↓                              ││        中间件: 请求→查内存缓存→校验用户权限树          │└─────────────────────────────────────────────────────┘
+三大权限分类：
+
+分类	范围	说明
+user.*	个人自助	个人资料、安全验证、会话、日志
+admin.*	管理后台	用户管理、角色管理、日志查看、系统配置
+system.*	系统运维	重启服务器、提升管理员、修改API映射
+📋 完整 API 列表（共 90+ 个端点）
+1. 公开 API（无需认证）
+方法	路径	说明
+GET	/health	健康检查
+POST	/api/auth/register	注册（限流）
+POST	/api/auth/register/verify-code	发送验证码（限流）
+POST	/api/auth/register/confirm	确认注册
+POST	/api/auth/login	登录（限流）
+POST	/api/auth/login/2fa	2FA 登录
+POST	/api/auth/refresh	刷新令牌
+POST	/api/auth/forgot-password	忘记密码
+POST	/api/auth/forgot-password/confirm	确认重置密码
+GET	/api/auth/oauth/:provider/redirect	OAuth 重定向
+GET	/api/auth/oauth/:provider/callback	OAuth 回调
+GET	/api/oauth/authorize	OAuth2 授权
+POST	/api/oauth/token	OAuth2 Token
+2. 需认证 API（通过 DB 动态检查权限）
+2.1 🔵 用户自助类 (user.*)
+方法	路径	所需权限	说明
+POST	/api/auth/logout	无需权限	登出
+POST	/api/auth/change-password	user.password.write	修改密码
+POST	/api/auth/oauth/:provider/unbind	无需权限	解绑 OAuth
+GET	/api/user/profile	user.profile.read	查看个人资料
+PUT	/api/user/profile	user.profile.write	修改个人资料(显示名称/头像)
+GET	/api/user/permissions	user.permission.read	查看自己的有效权限
+GET	/api/2fa/setup	user.security.write	获取 2FA 设置
+POST	/api/2fa/enable	user.security.write	启用 2FA
+POST	/api/2fa/disable	user.security.write	禁用 2FA
+GET	/api/2fa/backup-codes	user.security.read	查看备份码
+GET	/api/2fa/status	user.security.read	查看 2FA 状态
+GET	/api/sessions/me	user.session.read	查看当前会话
+GET	/api/sessions	user.session.read	查看会话列表
+DELETE	/api/sessions/:session_id	user.session.write	踢出指定会话
+DELETE	/api/sessions	user.session.write	踢出其他会话
+GET	/api/logs/login/me	无需权限(仅认证)	查看自己的登录日志
+GET	/api/logs/actions/me	无需权限(仅认证)	查看自己的操作日志
+GET	/api/security/alerts/me	user.security.read	查看安全告警
+POST	/api/security/alerts/:id/read	user.security.write	标记告警已读
+2.2 🟠 管理员类 (admin.*)
+用户管理
+方法	路径	所需权限	说明
+GET	/api/users	admin.user.list	用户列表
+GET	/api/users/:id	admin.user.read	查看用户详情
+POST	/api/users	admin.user.create	创建用户
+PUT	/api/users/:id	admin.user.update	修改用户信息
+PATCH	/api/users/:id/status	admin.user.status	启用/禁用用户
+DELETE	/api/users/:id	admin.user.delete	删除用户
+GET	/api/users/:id/permissions-override	admin.user.permission.read	查看用户权限覆盖
+PUT	/api/users/:id/permissions-override	admin.user.permission.write	设置用户权限覆盖
+角色管理
+方法	路径	所需权限	说明
+GET	/api/roles	admin.role.list	角色列表
+GET	/api/roles/all-with-permissions	admin.role.list	角色列表(含权限树)
+GET	/api/roles/:id	admin.role.read	查看角色详情
+GET	/api/roles/:id/permissions	admin.role.permission.read	查看角色旧权限
+GET	/api/roles/:id/permissions-tree	admin.role.permission.read	查看角色权限树
+POST	/api/roles	admin.role.create	创建角色
+PUT	/api/roles/:id	admin.role.update	修改角色
+DELETE	/api/roles/:id	admin.role.delete	删除角色
+POST	/api/roles/:id/permissions	admin.role.permission.write	设置角色旧权限
+PUT	/api/roles/:id/permissions-tree	admin.role.permission.write	设置角色权限树
+权限定义管理
+方法	路径	所需权限	说明
+GET	/api/permissions	admin.permission.list	权限定义列表
+POST	/api/permissions	admin.permission.create	创建权限定义
+PUT	/api/permissions/:id	admin.permission.update	修改权限定义
+DELETE	/api/permissions/:id	admin.permission.delete	删除权限定义
+日志查看
+方法	路径	所需权限	说明
+GET	/api/logs/login	admin.log.read	查看所有登录日志
+GET	/api/logs/actions	admin.log.read	查看所有操作日志
+安全配置
+方法	路径	所需权限	说明
+GET	/api/config/security	admin.security.config	查看安全配置
+PUT	/api/config/security	admin.security.config	修改安全配置
+SSO 管理
+方法	路径	所需权限	说明
+GET	/api/sso/clients	admin.sso.list	查看 SSO 客户端
+POST	/api/sso/clients	admin.sso.create	创建 SSO 客户端
+PUT	/api/sso/clients/:id	admin.sso.update	修改 SSO 客户端
+DELETE	/api/sso/clients/:id	admin.sso.delete	删除 SSO 客户端
+3. 🟢 管理后台 API (/api/admin/*)
+这些 API 与上面的 admin.* 权限对应，功能相同且检查相同的权限键
+
+管理看板
+方法	路径	所需权限	说明
+GET	/api/admin/dashboard	admin.dashboard.read	后台首页/概览
+用户管理
+方法	路径	所需权限	说明
+GET	/api/admin/users	admin.user.list	用户列表
+GET	/api/admin/users/:id	admin.user.read	查看用户
+POST	/api/admin/users	admin.user.create	创建用户
+PUT	/api/admin/users/:id	admin.user.update	修改用户
+PATCH	/api/admin/users/:id/status	admin.user.status	启用/禁用
+DELETE	/api/admin/users/:id	admin.user.delete	删除用户
+GET	/api/admin/users/:id/roles	admin.user.role	查看用户角色
+PUT	/api/admin/users/:id/roles	admin.user.role (设为管理员需 system.user.role)	设置用户角色 ⚡
+GET	/api/admin/users/:id/permissions-override	admin.user.permission.read	查看权限覆盖
+PUT	/api/admin/users/:id/permissions-override	admin.user.permission.write	设置权限覆盖
+GET	/api/admin/users/:id/effective-permissions	admin.user.permission.read	查看用户有效权限(合并后)✨
+角色管理
+方法	路径	所需权限	说明
+GET	/api/admin/roles	admin.role.list	角色列表
+GET	/api/admin/roles/:id	admin.role.read	查看角色
+POST	/api/admin/roles	admin.role.create	创建角色
+PUT	/api/admin/roles/:id	admin.role.update	修改角色
+DELETE	/api/admin/roles/:id	admin.role.delete	删除角色
+GET	/api/admin/roles/:id/permissions-tree	admin.role.permission.read	查看角色权限树
+PUT	/api/admin/roles/:id/permissions-tree	admin.role.permission.write	设置角色权限树
+其他管理功能
+方法	路径	所需权限	说明
+GET	/api/admin/permissions	admin.permission.list	权限定义列表
+GET	/api/admin/logs/login	admin.log.read	登录日志
+GET	/api/admin/logs/actions	admin.log.read	操作日志
+GET	/api/admin/config/security	admin.security.config	安全配置
+PUT	/api/admin/config/security	admin.security.config	修改安全配置
+GET	/api/admin/sso/clients	admin.sso.list	SSO 客户端
+POST	/api/admin/sso/clients	admin.sso.create	创建 SSO 客户端
+PUT	/api/admin/sso/clients/:id	admin.sso.update	修改 SSO 客户端
+DELETE	/api/admin/sso/clients/:id	admin.sso.delete	删除 SSO 客户端
+4. 🔴 系统运维 API (/api/admin/system/*)
+方法	路径	所需权限	说明
+POST	/api/admin/system/restart	system.server.restart	重启服务器
+GET	/api/admin/system/api-mappings	system.api.mapping.read	查看API权限映射表
+PUT	/api/admin/system/api-mappings/:id	system.api.mapping.write	修改API权限映射
+POST	/api/admin/system/api-mappings/reload	system.api.mapping.write	重载API映射缓存
+🔑 权限键完整列表（共 44 个）
+用户权限 (user.*) — 8 个
+权限键	类别	说明
+user.profile.read	读	查看个人资料
+user.profile.write	写	修改显示名称/头像
+user.email.read	读	查看邮箱
+user.email.write	写	更改邮箱地址
+user.phone.read	读	查看手机号
+user.phone.write	写	更改手机号
+user.password.write	写	修改密码
+user.security.read	读	查看2FA状态/备份码/安全告警
+user.security.write	写	启用/禁用2FA、标记告警已读
+user.session.read	读	查看会话列表
+user.session.write	写	踢出会话
+user.log.read	读	查看自己的登录/操作日志
+user.permission.read	读	查看自己的有效权限
+管理员权限 (admin.*) — 24 个
+权限键	类别	说明
+admin.dashboard.read	读	管理后台首页
+admin.user.list	读	查看用户列表
+admin.user.read	读	查看用户详情
+admin.user.create	写	创建用户
+admin.user.update	写	修改用户信息
+admin.user.delete	写	删除用户
+admin.user.status	写	启用/禁用用户
+admin.user.role	写	设置用户角色(不可设为管理员)
+admin.user.permission.read	读	查看用户权限覆盖/有效权限
+admin.user.permission.write	写	设置用户权限覆盖
+admin.role.list	读	查看角色列表
+admin.role.read	读	查看角色详情
+admin.role.create	写	创建角色
+admin.role.update	写	修改角色
+admin.role.delete	写	删除角色
+admin.role.permission.read	读	查看角色权限树
+admin.role.permission.write	写	设置角色权限树
+admin.permission.list	读	查看权限定义列表
+admin.permission.create	写	创建权限定义
+admin.permission.update	写	修改权限定义
+admin.permission.delete	写	删除权限定义
+admin.log.read	读	查看所有登录/操作日志
+admin.security.config	读写	查看/修改安全配置
+admin.sso.list	读	查看SSO客户端列表
+admin.sso.create	写	创建SSO客户端
+admin.sso.update	写	修改SSO客户端
+admin.sso.delete	写	删除SSO客户端
+系统权限 (system.*) — 4 个
+权限键	类别	说明
+system.server.restart	写	重启服务器
+system.user.role	写	将用户设为/取消管理员
+system.api.mapping.read	读	查看API权限映射
+system.api.mapping.write	写	修改/重载API权限映射
+🗄️ 数据库变更
+新增表：api_resources
+SQL
+
+
+
+CREATE TABLE api_resources (  id            BIGINT   AUTO_INCREMENT PRIMARY KEY,  method        VARCHAR(10)  NOT   NULL,        -- GET/POST/PUT/  PATCH/DELETE  path          VARCHAR(255) NOT   NULL,        -- /api/users/:id  permission_key VARCHAR(128) NOT   NULL DEFAULT '',  -- admin.user.  list  description   VARCHAR(255),  created_at    DATETIME NOT NULL,  updated_at    DATETIME NOT NULL,  UNIQUE INDEX idx_method_path   (method, path));
+该表存储 每个API端点 → 所需权限键 的映射关系，启动时加载到内存缓存。系统管理员可通过 PUT /api/admin/system/api-mappings/:id 动态修改。
+
+迁移兼容性
+对于已有数据库中 permissions_json 为空的角色：
+
+admin 角色 → 自动升级为 SystemPermissionTree()（全部权限全开）
+其他角色 → 自动升级为 UserPermissionTree()（仅用户自助权限）
