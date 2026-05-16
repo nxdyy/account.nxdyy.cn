@@ -21,6 +21,7 @@ export default function Users() {
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const pageSize = 15
   const [modalOpen, setModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [form, setForm] = useState({ username: '', email: '', password: '', nickname: '', phone: '' })
@@ -30,7 +31,7 @@ export default function Users() {
   const fetchUsers = async () => {
     setLoading(true)
     try {
-      const params = { page, limit: 15 }
+      const params = { page, page_size: pageSize }
       if (keyword) params.keyword = keyword
       const res = await getUsers(params)
       const data = res.data.data
@@ -149,11 +150,11 @@ export default function Users() {
         </CardBody>
       </Card>
 
-      {total > 15 && (
+      {total > pageSize && (
         <div className="pagination">
           <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>上一页</Button>
           <span className="pagination-info">第 {page} 页</span>
-          <Button variant="secondary" size="sm" disabled={page * 15 >= total} onClick={() => setPage(page + 1)}>下一页</Button>
+          <Button variant="secondary" size="sm" disabled={page * pageSize >= total} onClick={() => setPage(page + 1)}>下一页</Button>
         </div>
       )}
 

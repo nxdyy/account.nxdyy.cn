@@ -18,7 +18,7 @@ function LogoIcon() {
 
 export default function Register() {
   const [step, setStep] = useState(1)
-  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' })
+  const [form, setForm] = useState({ username: '', email: '', phone: '', password: '', confirmPassword: '' })
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -33,7 +33,7 @@ export default function Register() {
     }
     setLoading(true)
     try {
-      await register({ username: form.username, email: form.email, password: form.password })
+      await register({ username: form.username, email: form.email, phone: form.phone || undefined, password: form.password })
       setSuccess('注册成功，请验证你的邮箱')
       setStep(2)
     } catch (err) {
@@ -142,6 +142,16 @@ export default function Register() {
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     required
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <FormLabel htmlFor="phone">手机号</FormLabel>
+                  <FormInput
+                    id="phone"
+                    type="tel"
+                    placeholder="请输入手机号（选填）"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   />
                 </FormGroup>
                 <FormGroup>

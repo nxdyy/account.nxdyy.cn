@@ -140,6 +140,32 @@ export default function SecurityConfig() {
           </div>
         </CardBody>
       </Card>
+
+      <Card>
+        <CardHeader icon={ConfigIconSvg} title="注册策略" accent />
+        <CardBody>
+          <div className="admin-config-section">
+            <FormGroup>
+              <FormCheckbox
+                id="phone_required"
+                label="注册时手机号必填"
+                checked={form.phone_required === true}
+                onChange={(e) => handleChange('phone_required', e.target.checked)}
+              />
+              <div className="form-hint">开启后，用户注册时必须填写手机号</div>
+            </FormGroup>
+            <FormGroup>
+              <FormCheckbox
+                id="email_required"
+                label="注册时邮箱必填"
+                checked={form.email_required !== false}
+                onChange={(e) => handleChange('email_required', e.target.checked)}
+              />
+              <div className="form-hint">开启后，用户注册时必须填写邮箱</div>
+            </FormGroup>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   )
 }

@@ -40,6 +40,14 @@ export function getEffectivePermissions(id) {
   return client.get(`/admin/users/${id}/effective-permissions`)
 }
 
+export function getUserPermissionsOverride(id) {
+  return client.get(`/admin/users/${id}/permissions-override`)
+}
+
+export function setUserPermissionsOverride(id, data) {
+  return client.put(`/admin/users/${id}/permissions-override`, data)
+}
+
 export function getRoles() {
   return client.get('/admin/roles')
 }
