@@ -41,6 +41,9 @@ account.nxdyy.cn/
 │   ├── register.html        # 注册页入口
 │   ├── forgot/
 │   │   └── password.html    # 找回密码页入口
+│   ├── oauth/               # OAuth2 授权页面
+│   │   ├── authorize.html   # 授权确认页入口
+│   │   └── login.html       # OAuth 登录中转页入口
 │   ├── account.html         # 账户概览入口
 │   ├── account/
 │   │   ├── info.html        # 个人信息入口
@@ -70,6 +73,8 @@ account.nxdyy.cn/
 │   │   ├── login-2fa.jsx    # 二步验证页入口
 │   │   ├── register.jsx     # 注册页入口
 │   │   ├── forgot-password.jsx # 找回密码页入口
+│   │   ├── oauth-login.jsx  # OAuth 登录中转页入口
+│   │   ├── oauth-authorize.jsx # OAuth 授权确认页入口
 │   │   ├── account.jsx      # 账户概览入口
 │   │   ├── account-info.jsx # 个人信息入口
 │   │   ├── account-security.jsx # 安全设置入口
@@ -88,6 +93,7 @@ account.nxdyy.cn/
 │   │   ├── auth.js          # 认证相关 API
 │   │   ├── user.js          # 用户相关 API
 │   │   ├── admin.js         # 管理后台 API
+│   │   ├── oauth2.js        # OAuth2 授权流程 API + Scope 定义
 │   │   └── client.js        # Axios 客户端配置
 │   ├── components/          # 通用组件
 │   │   ├── Button.jsx       # 按钮组件
@@ -110,6 +116,10 @@ account.nxdyy.cn/
 │   │   │   ├── Login2FA.jsx # 二步验证
 │   │   │   ├── Register.jsx # 注册
 │   │   │   └── ForgotPassword.jsx # 找回密码
+│   │   ├── oauth/           # OAuth2 授权页面
+│   │   │   ├── OAuthLogin.jsx # OAuth 登录中转页
+│   │   │   ├── OAuthAuthorize.jsx # OAuth 授权确认页
+│   │   │   └── OAuth.css    # OAuth 页面样式
 │   │   ├── account/         # 账户管理页面
 │   │   │   ├── Overview.jsx # 账户概览
 │   │   │   ├── YourInfo.jsx # 个人信息
@@ -179,6 +189,9 @@ account.nxdyy.cn/
 /register                   -> pages/register.html -> src/entries/register.jsx
 /forgot/password            -> pages/forgot/password.html -> src/entries/forgot-password.jsx
 
+/oauth/login                -> pages/oauth/login.html -> src/entries/oauth-login.jsx
+/oauth/authorize            -> pages/oauth/authorize.html -> src/entries/oauth-authorize.jsx
+
 /account                    -> pages/account.html -> src/entries/account.jsx
 /account/info               -> pages/account/info.html -> src/entries/account-info.jsx
 /account/security           -> pages/account/security.html -> src/entries/account-security.jsx
@@ -222,7 +235,171 @@ account.nxdyy.cn/
    -> 无权限: 根据页面类型决定跳转
    ```
 
-#### 5.1.2 错误处理规范
+#### 5.1.2 OAuth2 授权流程
+
+**授权码模式 (Authorization Code Flow)**:
+```
+┌─────────────┐                                    ┌─────────────┐
+│   第三方    │──(1) 请求授权 /oauth/authorize────>│  隐向账户   │
+│   应用      │    ?client_id=xxx&redirect_uri=xxx │  系统       │
+│             │    &scope=user.info+user.email     │             │
+├─────────────┤                                    ├─────────────┤
+│             │<──(2) 重定向到登录页（如需登录）────│             │
+│             │    /oauth/login?client_id=xxx&...  │             │
+│             │                                    │             │
+│             │──(3) 登录后显示授权确认页 ─────────>│             │
+│             │    /oauth/authorize?client_id=xxx  │             │
+│             │    展示 scope 权限列表             │             │
+│             │                                    │             │
+│             │──(4) 用户确认授权 ─────────────────>│             │
+│             │    POST /api/oauth/consent         │             │
+│             │                                    │             │
+│             │<──(5) 302 重定向到 redirect_uri ────│             │
+│             │    ?code=AUTHORIZATION_CODE        │             │
+│             │    &state=xxx                      │             │
+│             │                                    │             │
+│             │──(6) 用 code 请求 token ───────────>│             │
+│             │    POST /api/oauth/token           │             │
+│             │    {code, client_id, client_secret}│             │
+│             │                                    │             │
+│             │<──(7) 返回 access_token ────────────│             │
+│             │    {access_token, refresh_token,   │             │
+│             │     id_token, expires_in,          │             │
+│             │     scope, token_type}             │             │
+│             │                                    │             │
+│             │──(8) 使用 access_token 获取用户信息>│             │
+│             │    GET /api/oauth/userinfo         │             │
+│             │    Authorization: Bearer xxx       │             │
+│             │                                    │             │
+│             │<──(9) 返回用户信息 ─────────────────│             │
+│             │    {id, username, email, nickname} │             │
+└─────────────┘                                    └─────────────┘
+```
+
+**前端页面**:
+
+| 页面 | 路由 | 组件 | 功能 |
+|------|------|------|------|
+| OAuth 登录 | `/oauth/login` | `OAuthLogin.jsx` | 未登录用户的登录中转页，登录后跳转回授权页 |
+| OAuth 授权确认 | `/oauth/authorize` | `OAuthAuthorize.jsx` | 显示第三方应用名称、请求的 Scope 权限列表、隐私说明、同意/拒绝按钮 |
+
+**OAuth 登录页 (`/oauth/login`)**:
+- 读取 URL 中的 OAuth 参数（client_id, redirect_uri, response_type, scope, state）
+- 如果用户已登录，自动跳转到 `/oauth/authorize` 并携带原始参数
+- 如果用户未登录，显示登录表单
+- 登录成功后跳转到 `/oauth/authorize` 并携带原始参数
+- 如需二步验证，跳转到 `/login/2fa` 并携带原始参数
+
+**OAuth 授权确认页 (`/oauth/authorize`)**:
+- 读取 URL 中的 OAuth 参数
+- 如果用户未登录，重定向到 `/oauth/login` 并携带原始参数
+- 如果用户已登录，调用后端 API 验证请求并获取客户端信息
+- 显示授权确认界面：
+  - 第三方应用名称
+  - 请求的 Scope 权限列表（带中文描述）
+  - 隐私保护说明
+  - 当前登录用户信息
+  - "同意授权"和"拒绝"按钮
+- 用户点击"同意授权"：调用 `POST /api/oauth/consent` (consent=allow)，后端返回重定向 URL
+- 用户点击"拒绝"：调用 `POST /api/oauth/consent` (consent=deny)，重定向到回调地址并附带 error=access_denied
+
+**关键端点**:
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/oauth/authorize` | GET | 前端授权确认页面入口 |
+| `/oauth/login` | GET | 前端 OAuth 登录中转页入口 |
+| `/api/oauth/authorize` | GET | 后端授权验证接口 |
+| `/api/oauth/consent` | POST | 后端授权确认提交接口 |
+| `/api/oauth/token` | POST | 后端 Token 交换接口 |
+| `/api/oauth/userinfo` | GET | 后端用户信息接口 |
+
+**Scope 权限映射**（与后端 `pkg/oauth/scope.go` 对应）：
+
+**用户相关 Scope**:
+| Scope | 对应权限键 | 显示名称 | 用户信息端点返回字段 |
+|-------|-----------|----------|---------------------|
+| user.info | user.profile.read | 获取用户基本信息 | username, nickname, avatar, email, phone |
+| user.email | user.email.read | 获取用户邮箱 | email |
+| user.phone | user.phone.read | 获取用户手机号 | phone |
+| user.password | user.password.write | 修改密码 | - |
+| user.security | user.security.read | 获取安全设置 | twofa_enabled |
+| user.session | user.session.read | 获取会话信息 | - |
+| user.log | user.log.read | 获取操作日志 | - |
+| user.permission | user.permission.read | 获取权限信息 | - |
+
+**管理员 Scope**:
+| Scope | 对应权限键 | 显示名称 | 用户信息端点返回字段 |
+|-------|-----------|----------|---------------------|
+| admin.user | admin.user.list | 管理用户 | - |
+| admin.role | admin.role.list | 管理角色 | - |
+| admin.permission | admin.permission.list | 管理权限定义 | - |
+| admin.log | admin.log.read | 查看系统日志 | - |
+| admin.security | admin.security.config | 管理系统安全配置 | - |
+| admin.sso | admin.sso.list | 管理 SSO/OAuth 客户端 | - |
+| admin.dashboard | admin.dashboard.read | 访问管理后台仪表盘 | - |
+
+**系统 Scope**:
+| Scope | 对应权限键 | 显示名称 | 用户信息端点返回字段 |
+|-------|-----------|----------|---------------------|
+| system.server | system.server.restart | 执行服务器重启 | - |
+| system.api.mapping | system.api.mapping.read | 查看 API 权限映射 | - |
+
+**权限校验规则**:
+- 用户请求授权时，系统根据用户当前权限树自动过滤无权限的 scope
+- 授权确认页面只展示用户有权限的 scope（后端已过滤）
+- 生成的授权码只包含被允许的 scope
+- Access Token 中的 scope 为实际被授权的 scope
+
+**Scope 统一定义**:
+前端在 `src/api/oauth2.js` 中维护了与后端一致的 Scope 定义（`OAUTH_SCOPES`），供以下场景使用：
+1. SSO 客户端管理页面的 Scope 快捷选择器
+2. 授权确认页面的 Scope 中文显示（`SCOPE_LABELS`）
+3. 授权确认页面的 Scope 详细描述（`SCOPE_DESCRIPTIONS`）
+
+**OAuth2 API 模块** (`src/api/oauth2.js`):
+
+| 导出 | 类型 | 用途 |
+|------|------|------|
+| `OAUTH_SCOPES` | 常量 | 按分组定义的所有 Scope（user/admin/system） |
+| `SCOPE_LABELS` | 常量 | Scope → 中文标签映射 |
+| `SCOPE_DESCRIPTIONS` | 常量 | Scope → 详细描述映射 |
+| `SCOPE_GROUPS` | 常量 | Scope 分组定义（用于选择器） |
+| `getAuthorizeInfo(params)` | 函数 | 调用后端验证授权请求并获取客户端信息 |
+| `submitConsent(data)` | 函数 | 提交授权确认（allow/deny） |
+
+#### 5.1.3 SSO 客户端管理
+
+SSO 客户端管理页面（`/admin/sso`）支持以下功能：
+
+**客户端列表**:
+- 显示客户端名称、Client ID（带复制按钮）、回调地址、授权范围（Scope 标签）、启用状态、创建时间
+- 支持编辑和删除操作
+- Client ID 支持一键复制
+
+**创建/编辑客户端**:
+- Client ID（创建时必填，编辑时不可修改）
+- Client Secret（创建时必填，编辑时留空则不修改；支持显示/隐藏切换）
+- 客户端名称
+- 回调地址（多个用逗号分隔）
+- 授权类型（默认 `authorization_code,refresh_token`）
+- 授权范围 (Scopes)：使用 **Scope 快捷选择器**
+
+**Scope 快捷选择器**:
+- 按分组展示所有可用 Scope：用户权限、管理员权限、系统权限
+- 每个 Scope 显示中文名称和 Scope 值
+- 支持单个勾选/取消
+- 支持按分组全选/取消全选
+- 底部显示已选 Scope 的预览
+
+**API 接口**:
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/sso/clients` | GET | 获取客户端列表 |
+| `/sso/clients` | POST | 创建客户端 |
+| `/sso/clients/:id` | PUT | 更新客户端 |
+| `/sso/clients/:id` | DELETE | 删除客户端 |
+
+#### 5.1.4 错误处理规范
 
 所有认证相关操作都需要区分网络错误和业务错误：
 
@@ -308,7 +485,8 @@ account.nxdyy.cn/
 |------|------|------|
 | 认证 | auth.js | 登录、注册、找回密码、Token 刷新 |
 | 用户 | user.js | 用户信息、会话、2FA、日志、安全提醒 |
-| 管理 | admin.js | 用户/角色/权限管理、审计日志、系统配置 |
+| 管理 | admin.js | 用户/角色/权限管理、审计日志、系统配置、SSO 客户端 |
+| OAuth2 | oauth2.js | OAuth2 授权流程、Scope 定义、授权确认提交 |
 
 ### 5.4 权限系统
 
@@ -578,6 +756,7 @@ showError('请求失败', {
 | index.css | 全局重置和基础样式 |
 | variables.css | CSS 变量定义 |
 | Auth.css | 认证页面样式 |
+| OAuth.css | OAuth2 授权页面样式 |
 | Account.css | 账户页面样式 |
 | Admin.css | 管理后台样式 |
 | Button.css | 按钮组件样式 |
@@ -671,6 +850,8 @@ const pages = {
   'login/2fa': resolve(__dirname, 'pages/login/2fa.html'),
   register: resolve(__dirname, 'pages/register.html'),
   'forgot/password': resolve(__dirname, 'pages/forgot/password.html'),
+  'oauth/login': resolve(__dirname, 'pages/oauth/login.html'),
+  'oauth/authorize': resolve(__dirname, 'pages/oauth/authorize.html'),
   account: resolve(__dirname, 'pages/account.html'),
   'account/info': resolve(__dirname, 'pages/account/info.html'),
   // ... 其他页面
@@ -697,6 +878,9 @@ dist/
 ├── register.html                 # 注册页
 ├── forgot/
 │   └── password.html             # 找回密码页
+├── oauth/
+│   ├── login.html                # OAuth 登录中转页
+│   └── authorize.html            # OAuth 授权确认页
 ├── account.html                  # 账户概览
 ├── account/
 │   ├── info.html                 # 个人信息
