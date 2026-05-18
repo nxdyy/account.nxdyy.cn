@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import useAuthStore from './store/authStore'
+import useThemeStore from './store/themeStore'
 import ProtectedRoute from './components/ProtectedRoute'
 import PageTransition from './components/PageTransition'
 import Layout from './components/Layout/Layout'
@@ -28,10 +29,12 @@ import SystemApiMappings from './pages/admin/SystemApiMappings'
 export default function App() {
   const initialize = useAuthStore((s) => s.initialize)
   const isInitialized = useAuthStore((s) => s.isInitialized)
+  const initializeTheme = useThemeStore((s) => s.initialize)
 
   useEffect(() => {
     initialize()
-  }, [initialize])
+    initializeTheme()
+  }, [initialize, initializeTheme])
 
   if (!isInitialized) {
     return (

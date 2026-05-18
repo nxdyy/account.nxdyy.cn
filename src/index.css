@@ -22,11 +22,13 @@ body {
   color: var(--color-text-primary);
   background-color: var(--color-page-bg);
   min-height: 100vh;
+  transition: background-color var(--transition-base), color var(--transition-base);
 }
 
 a {
   color: var(--color-primary);
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
 a:hover {
@@ -45,6 +47,7 @@ img {
 input, button, select, textarea {
   font-family: inherit;
   font-size: inherit;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 button {
