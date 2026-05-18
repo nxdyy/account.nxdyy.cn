@@ -62,10 +62,10 @@ const adminNavItems = [
   { path: '/admin/users', label: '用户管理', icon: UsersIcon, perm: 'admin.user' },
   { path: '/admin/roles', label: '角色管理', icon: RoleIcon, perm: 'admin.role' },
   { path: '/admin/permissions', label: '权限管理', icon: PermissionIcon, perm: 'admin.permission' },
-  { path: '/admin/security/config', label: '安全策略', icon: ConfigIcon, perm: 'admin.security' },
+  { path: '/admin/security-config', label: '安全策略', icon: ConfigIcon, perm: 'admin.security' },
   { path: '/admin/sso', label: 'SSO 客户端', icon: SSOIcon, perm: 'admin.sso' },
-  { path: '/admin/audit/logs', label: '审计日志', icon: AuditIcon, perm: 'admin.log' },
-  { path: '/admin/system/api/mappings', label: '系统运维', icon: ServerIcon, perm: 'system.api' },
+  { path: '/admin/audit-logs', label: '审计日志', icon: AuditIcon, perm: 'admin.log' },
+  { path: '/admin/system/api-mappings', label: '系统运维', icon: ServerIcon, perm: 'system.api' },
 ]
 
 function hasPermission(permissions, permPrefix) {
