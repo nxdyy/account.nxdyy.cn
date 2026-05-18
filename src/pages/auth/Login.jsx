@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '../../store/authStore'
+import { showError } from '../../store/toastStore'
 import Button from '../../components/Button'
 import { FormGroup, FormLabel, FormInput } from '../../components/Input'
 import './Auth.css'
@@ -20,11 +21,9 @@ export default function Login() {
   const navigate = useNavigate()
   const { login, isLoading } = useAuthStore()
   const [form, setForm] = useState({ username: '', password: '' })
-  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
     try {
       const result = await login(form.username, form.password)
       if (result.need2FA) {
@@ -33,8 +32,18 @@ export default function Login() {
         navigate('/account')
       }
     } catch (err) {
-      const msg = err.response?.data?.message || '登录失败，请检查账号和密码'
-      setError(msg)
+      let msg
+      if (!err.response) {
+        // 网络错误（无响应）
+        msg = '无法连接到服务器，请检查网络连接'
+      } else if (err.response.status === 401) {
+        // 认证失败（账号或密码错误）
+        msg = err.response.data?.message || '登录失败，请检查账号和密码'
+      } else {
+        // 其他错误
+        msg = err.response.data?.message || '登录失败，请稍后重试'
+      }
+      showError(msg)
     }
   }
 
@@ -48,8 +57,6 @@ export default function Login() {
         <div className="auth-card">
           <h1 className="auth-title">登录</h1>
           <p className="auth-subtitle">使用你的隐向账户登录</p>
-
-          {error && <div className="auth-error">{error}</div>}
 
           <form onSubmit={handleSubmit}>
             <FormGroup>

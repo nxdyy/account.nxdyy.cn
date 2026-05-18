@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSecurityConfig, updateSecurityConfig } from '../../api/admin'
+import { showError, showSuccess } from '../../store/toastStore'
 import Card, { CardHeader, CardBody } from '../../components/Card'
 import Button from '../../components/Button'
 import { FormGroup, FormLabel, FormInput, FormCheckbox } from '../../components/Input'
@@ -38,9 +39,17 @@ export default function SecurityConfig() {
       await updateSecurityConfig(form)
       setConfig(form)
       setSuccess('安全策略已更新')
+      showSuccess('安全策略已更新')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
-      setError(err.response?.data?.message || '保存失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '保存失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setSaving(false)
     }

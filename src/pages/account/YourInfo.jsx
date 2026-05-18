@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { updateProfile } from '../../api/user'
+import { showError, showSuccess } from '../../store/toastStore'
 import Card, { CardHeader, CardBody, CardRow } from '../../components/Card'
 import Modal from '../../components/Modal'
 import Button from '../../components/Button'
@@ -35,8 +36,16 @@ export default function YourInfo() {
       await updateProfile({ nickname: editValue })
       await refreshUser()
       setEditOpen(false)
+      showSuccess('保存成功')
     } catch (err) {
-      setError(err.response?.data?.message || '保存失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '保存失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setLoading(false)
     }

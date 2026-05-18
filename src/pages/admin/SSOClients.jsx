@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSSOClients, createSSOClient, updateSSOClient, deleteSSOClient } from '../../api/admin'
+import { showError, showSuccess } from '../../store/toastStore'
 import Card, { CardHeader, CardBody } from '../../components/Card'
 import Table from '../../components/Table'
 import Button from '../../components/Button'
@@ -57,13 +58,22 @@ export default function SSOClients() {
     try {
       if (editing) {
         await updateSSOClient(editing.id, form)
+        showSuccess('客户端已更新')
       } else {
         await createSSOClient(form)
+        showSuccess('客户端已创建')
       }
       setModalOpen(false)
       fetchData()
     } catch (err) {
-      setError(err.response?.data?.message || '操作失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '操作失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setSubmitting(false)
     }

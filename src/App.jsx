@@ -5,6 +5,7 @@ import useAuthStore from './store/authStore'
 import ProtectedRoute from './components/ProtectedRoute'
 import PageTransition from './components/PageTransition'
 import Layout from './components/Layout/Layout'
+import ToastContainer from './components/Toast'
 import Login from './pages/auth/Login'
 import Login2FA from './pages/auth/Login2FA'
 import Register from './pages/auth/Register'
@@ -41,48 +42,51 @@ export default function App() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes>
-        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
-        <Route path="/login/2fa" element={<PageTransition><Login2FA /></PageTransition>} />
-        <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
-        <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
+    <>
+      <ToastContainer />
+      <AnimatePresence mode="wait">
+          <Routes>
+          <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+          <Route path="/login/2fa" element={<PageTransition><Login2FA /></PageTransition>} />
+          <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+          <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
 
-        <Route
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/account" replace />} />
-          <Route path="account" element={<Overview />} />
-          <Route path="account/info" element={<YourInfo />} />
-          <Route path="account/security" element={<Security />} />
-          <Route path="account/devices" element={<Devices />} />
-          <Route path="account/privacy" element={<Privacy />} />
-          <Route path="account/subscriptions" element={<Subscriptions />} />
-        </Route>
+          <Route
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/account" replace />} />
+            <Route path="account" element={<Overview />} />
+            <Route path="account/info" element={<YourInfo />} />
+            <Route path="account/security" element={<Security />} />
+            <Route path="account/devices" element={<Devices />} />
+            <Route path="account/privacy" element={<Privacy />} />
+            <Route path="account/subscriptions" element={<Subscriptions />} />
+          </Route>
 
-        <Route
-          element={
-            <ProtectedRoute requireAdmin>
-              <Layout wide />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="admin" element={<AdminDashboard />} />
-          <Route path="admin/users" element={<Users />} />
-          <Route path="admin/roles" element={<Roles />} />
-          <Route path="admin/permissions" element={<Permissions />} />
-          <Route path="admin/security-config" element={<SecurityConfig />} />
-          <Route path="admin/sso" element={<SSOClients />} />
-          <Route path="admin/audit-logs" element={<AuditLogs />} />
-          <Route path="admin/system/api-mappings" element={<SystemApiMappings />} />
-        </Route>
+          <Route
+            element={
+              <ProtectedRoute requireAdmin>
+                <Layout wide />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="admin" element={<AdminDashboard />} />
+            <Route path="admin/users" element={<Users />} />
+            <Route path="admin/roles" element={<Roles />} />
+            <Route path="admin/permissions" element={<Permissions />} />
+            <Route path="admin/security-config" element={<SecurityConfig />} />
+            <Route path="admin/sso" element={<SSOClients />} />
+            <Route path="admin/audit-logs" element={<AuditLogs />} />
+            <Route path="admin/system/api-mappings" element={<SystemApiMappings />} />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/account" replace />} />
-      </Routes>
-    </AnimatePresence>
+          <Route path="*" element={<Navigate to="/account" replace />} />
+        </Routes>
+      </AnimatePresence>
+    </>
   )
 }

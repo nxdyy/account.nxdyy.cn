@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { forgotPassword, confirmForgotPassword } from '../../api/auth'
+import { showError, showSuccess } from '../../store/toastStore'
 import Button from '../../components/Button'
 import { FormGroup, FormLabel, FormInput } from '../../components/Input'
 import './Auth.css'
@@ -22,20 +23,23 @@ export default function ForgotPassword() {
   const [code, setCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleRequestReset = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
     try {
       await forgotPassword({ email })
-      setSuccess('重置密码的验证码已发送到你的邮箱')
+      showSuccess('重置密码的验证码已发送到你的邮箱')
       setStep(2)
     } catch (err) {
-      setError(err.response?.data?.message || '请求失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '请求失败'
+      }
+      showError(msg)
     } finally {
       setLoading(false)
     }
@@ -43,18 +47,23 @@ export default function ForgotPassword() {
 
   const handleConfirmReset = async (e) => {
     e.preventDefault()
-    setError('')
     if (newPassword !== confirmPassword) {
-      setError('两次输入的密码不一致')
+      showError('两次输入的密码不一致')
       return
     }
     setLoading(true)
     try {
       await confirmForgotPassword({ email, code, new_password: newPassword })
-      setSuccess('密码重置成功')
+      showSuccess('密码重置成功')
       setStep(3)
     } catch (err) {
-      setError(err.response?.data?.message || '重置失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '重置失败'
+      }
+      showError(msg)
     } finally {
       setLoading(false)
     }
@@ -72,7 +81,7 @@ export default function ForgotPassword() {
             <>
               <h1 className="auth-title">密码已重置</h1>
               <p className="auth-subtitle">你的密码已成功重置</p>
-              <div className="auth-success">{success}</div>
+              <div className="auth-success">密码重置成功</div>
               <Link to="/login" style={{ display: 'block', textAlign: 'center', marginTop: 'var(--spacing-base)', color: 'var(--color-primary)', fontWeight: 'var(--font-weight-medium)' }}>
                 前往登录
               </Link>
@@ -81,8 +90,6 @@ export default function ForgotPassword() {
             <>
               <h1 className="auth-title">重置密码</h1>
               <p className="auth-subtitle">请输入发送到 {email} 的验证码和新密码</p>
-              {error && <div className="auth-error">{error}</div>}
-              {success && <div className="auth-success">{success}</div>}
               <form onSubmit={handleConfirmReset}>
                 <FormGroup>
                   <FormLabel htmlFor="code">验证码</FormLabel>
@@ -105,7 +112,6 @@ export default function ForgotPassword() {
             <>
               <h1 className="auth-title">找回密码</h1>
               <p className="auth-subtitle">输入你的邮箱地址，我们将发送验证码帮助你重置密码</p>
-              {error && <div className="auth-error">{error}</div>}
               <form onSubmit={handleRequestReset}>
                 <FormGroup>
                   <FormLabel htmlFor="email">邮箱地址</FormLabel>

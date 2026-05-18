@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getRoles, createRole, updateRole, deleteRole } from '../../api/admin'
+import { showError, showSuccess } from '../../store/toastStore'
 import Card, { CardHeader, CardBody } from '../../components/Card'
 import Table from '../../components/Table'
 import Button from '../../components/Button'
@@ -52,13 +53,22 @@ export default function Roles() {
     try {
       if (editingRole) {
         await updateRole(editingRole.id, form)
+        showSuccess('角色已更新')
       } else {
         await createRole(form)
+        showSuccess('角色已创建')
       }
       setModalOpen(false)
       fetchRoles()
     } catch (err) {
-      setError(err.response?.data?.message || '操作失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '操作失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setSubmitting(false)
     }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { register, sendRegisterCode, confirmRegister } from '../../api/auth'
+import { showError, showSuccess } from '../../store/toastStore'
 import Button from '../../components/Button'
 import { FormGroup, FormLabel, FormInput } from '../../components/Input'
 import './Auth.css'
@@ -20,37 +21,45 @@ export default function Register() {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({ username: '', email: '', phone: '', password: '', confirmPassword: '' })
   const [code, setCode] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleRegister = async (e) => {
     e.preventDefault()
-    setError('')
     if (form.password !== form.confirmPassword) {
-      setError('两次输入的密码不一致')
+      showError('两次输入的密码不一致')
       return
     }
     setLoading(true)
     try {
       await register({ username: form.username, email: form.email, phone: form.phone || undefined, password: form.password })
-      setSuccess('注册成功，请验证你的邮箱')
+      showSuccess('注册成功，请验证你的邮箱')
       setStep(2)
     } catch (err) {
-      setError(err.response?.data?.message || '注册失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '注册失败'
+      }
+      showError(msg)
     } finally {
       setLoading(false)
     }
   }
 
   const handleSendCode = async () => {
-    setError('')
     setLoading(true)
     try {
       await sendRegisterCode({ email: form.email })
-      setSuccess('验证码已发送到你的邮箱')
+      showSuccess('验证码已发送到你的邮箱')
     } catch (err) {
-      setError(err.response?.data?.message || '发送验证码失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '发送验证码失败'
+      }
+      showError(msg)
     } finally {
       setLoading(false)
     }
@@ -58,14 +67,19 @@ export default function Register() {
 
   const handleConfirm = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
     try {
       await confirmRegister({ email: form.email, code })
-      setSuccess('帐户激活成功')
+      showSuccess('帐户激活成功')
       setStep(3)
     } catch (err) {
-      setError(err.response?.data?.message || '验证失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '验证失败'
+      }
+      showError(msg)
     } finally {
       setLoading(false)
     }
@@ -83,7 +97,7 @@ export default function Register() {
             <>
               <h1 className="auth-title">注册完成</h1>
               <p className="auth-subtitle">你的帐户已成功创建并激活</p>
-              <div className="auth-success">{success}</div>
+              <div className="auth-success">帐户激活成功</div>
               <Link to="/login" style={{ display: 'block', textAlign: 'center', marginTop: 'var(--spacing-base)', color: 'var(--color-primary)', fontWeight: 'var(--font-weight-medium)' }}>
                 前往登录
               </Link>
@@ -92,8 +106,6 @@ export default function Register() {
             <>
               <h1 className="auth-title">验证邮箱</h1>
               <p className="auth-subtitle">我们已向 {form.email} 发送了验证码</p>
-              {error && <div className="auth-error">{error}</div>}
-              {success && <div className="auth-success">{success}</div>}
               <form onSubmit={handleConfirm}>
                 <FormGroup>
                   <FormLabel htmlFor="code">验证码</FormLabel>
@@ -120,7 +132,6 @@ export default function Register() {
             <>
               <h1 className="auth-title">创建帐户</h1>
               <p className="auth-subtitle">创建一个新的隐向账户</p>
-              {error && <div className="auth-error">{error}</div>}
               <form onSubmit={handleRegister}>
                 <FormGroup>
                   <FormLabel htmlFor="username">用户名</FormLabel>

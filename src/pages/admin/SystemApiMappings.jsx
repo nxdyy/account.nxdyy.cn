@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getApiMappings, updateApiMapping, reloadApiMappings, restartServer } from '../../api/admin'
+import { showError, showSuccess } from '../../store/toastStore'
 import Card, { CardHeader, CardBody } from '../../components/Card'
 import Table from '../../components/Table'
 import Button from '../../components/Button'
@@ -23,9 +24,7 @@ export default function SystemApiMappings() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ method: '', path: '', permission_key: '', description: '' })
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [reloadMsg, setReloadMsg] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
@@ -57,24 +56,28 @@ export default function SystemApiMappings() {
     try {
       await updateApiMapping(editing.id, form)
       setModalOpen(false)
-      setSuccess(`映射 ${editing.method} ${editing.path} 已更新`)
-      setTimeout(() => setSuccess(''), 3000)
+      showSuccess(`映射 ${editing.method} ${editing.path} 已更新`)
       fetchData()
     } catch (err) {
-      setError(err.response?.data?.message || '更新失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '更新失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleReload = async () => {
-    setReloadMsg('')
     try {
       await reloadApiMappings()
-      setReloadMsg('API 映射缓存已重载')
-      setTimeout(() => setReloadMsg(''), 3000)
+      showSuccess('API 映射缓存已重载')
     } catch {
-      setReloadMsg('重载失败')
+      showError('重载失败')
     }
   }
 
@@ -109,10 +112,6 @@ export default function SystemApiMappings() {
           </Button>
         </div>
       </div>
-
-      {error && <div className="auth-error">{error}</div>}
-      {success && <div className="auth-success">{success}</div>}
-      {reloadMsg && <div className="auth-success">{reloadMsg}</div>}
 
       <Card>
         <CardHeader icon={ServerIcon} title="API 权限映射表" subtitle="每个 API 端点所需的权限键，修改后需重载生效" accent />

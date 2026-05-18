@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { get2FASetup, enable2FA, disable2FA, get2FAStatus, getSecurityAlerts, markAlertRead } from '../../api/user'
 import { changePassword } from '../../api/auth'
+import { showError, showSuccess } from '../../store/toastStore'
 import Card, { CardHeader, CardBody, CardRow } from '../../components/Card'
 import Modal from '../../components/Modal'
 import Button from '../../components/Button'
@@ -60,7 +61,9 @@ export default function Security() {
       const res = await get2FASetup()
       setTwofaSetup(res.data.data)
     } catch {
-      setError('获取设置信息失败')
+      const msg = '获取设置信息失败'
+      setError(msg)
+      showError(msg)
     } finally {
       setSetupLoading(false)
     }
@@ -75,8 +78,16 @@ export default function Security() {
       setTwofaModal(false)
       setTwofaCode('')
       setTwofaSetup(null)
+      showSuccess('两步验证已启用')
     } catch (err) {
-      setError(err.response?.data?.message || '启用失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '启用失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setLoading(false)
     }
@@ -90,8 +101,16 @@ export default function Security() {
       await refresh2FAStatus()
       setTwofaModal(false)
       setTwofaCode('')
+      showSuccess('两步验证已关闭')
     } catch (err) {
-      setError(err.response?.data?.message || '关闭失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '关闭失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setLoading(false)
     }
@@ -103,7 +122,14 @@ export default function Security() {
       const res = await get2FAStatus()
       setBackupCodes(res.data.data?.backup_codes || [])
     } catch (err) {
-      setError(err.response?.data?.message || '获取失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '获取失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setLoading(false)
     }
@@ -112,7 +138,9 @@ export default function Security() {
   const handleChangePwd = async () => {
     setError('')
     if (pwdForm.new_password !== pwdForm.confirm_password) {
-      setError('两次输入的新密码不一致')
+      const msg = '两次输入的新密码不一致'
+      setError(msg)
+      showError(msg)
       return
     }
     setLoading(true)
@@ -122,10 +150,18 @@ export default function Security() {
         new_password: pwdForm.new_password,
       })
       setSuccess('密码修改成功')
+      showSuccess('密码修改成功')
       setPwdModal(false)
       setPwdForm({ old_password: '', new_password: '', confirm_password: '' })
     } catch (err) {
-      setError(err.response?.data?.message || '修改失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '修改失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setLoading(false)
     }

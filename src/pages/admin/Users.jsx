@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getUsers, createUser, updateUser, updateUserStatus, deleteUser } from '../../api/admin'
+import { showError, showSuccess } from '../../store/toastStore'
 import Card, { CardHeader, CardBody } from '../../components/Card'
 import Table, { Badge } from '../../components/Table'
 import Button from '../../components/Button'
@@ -70,13 +71,22 @@ export default function Users() {
     try {
       if (editingUser) {
         await updateUser(editingUser.id, form)
+        showSuccess('用户已更新')
       } else {
         await createUser(form)
+        showSuccess('用户已创建')
       }
       setModalOpen(false)
       fetchUsers()
     } catch (err) {
-      setError(err.response?.data?.message || '操作失败')
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '操作失败'
+      }
+      setError(msg)
+      showError(msg)
     } finally {
       setSubmitting(false)
     }

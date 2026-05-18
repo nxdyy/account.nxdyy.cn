@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import useAuthStore from '../../store/authStore'
+import { showError } from '../../store/toastStore'
 import Button from '../../components/Button'
 import { FormGroup, FormLabel, FormInput } from '../../components/Input'
 import './Auth.css'
@@ -9,7 +10,6 @@ export default function Login2FA() {
   const navigate = useNavigate()
   const { verify2FA, isLoading, need2FA } = useAuthStore()
   const [code, setCode] = useState('')
-  const [error, setError] = useState('')
 
   if (!need2FA) {
     navigate('/login', { replace: true })
@@ -18,13 +18,17 @@ export default function Login2FA() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
     try {
       await verify2FA(code)
       navigate('/account')
     } catch (err) {
-      const msg = err.response?.data?.message || '验证码错误，请重试'
-      setError(msg)
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '验证码错误，请重试'
+      }
+      showError(msg)
     }
   }
 
@@ -34,8 +38,6 @@ export default function Login2FA() {
         <div className="auth-card">
           <h1 className="auth-title">二步验证</h1>
           <p className="auth-subtitle">请输入你的验证器应用中的验证码以完成登录</p>
-
-          {error && <div className="auth-error">{error}</div>}
 
           <form onSubmit={handleSubmit}>
             <FormGroup>

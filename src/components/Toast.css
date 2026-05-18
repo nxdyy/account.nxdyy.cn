@@ -1,0 +1,219 @@
+.toast-container {
+  position: fixed;
+  top: calc(var(--topbar-height) + var(--spacing-base));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  pointer-events: none;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 var(--spacing-base);
+}
+
+.toast-item {
+  pointer-events: auto;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: toastSlideDown 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.toast-item.toast-exit {
+  animation: toastSlideUp 0.25s ease-in forwards;
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+.toast-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-base);
+  min-height: 40px;
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.toast-icon-success {
+  color: var(--color-success);
+}
+
+.toast-icon-error {
+  color: var(--color-danger);
+}
+
+.toast-icon-warning {
+  color: var(--color-warning);
+}
+
+.toast-icon-info {
+  color: var(--color-primary);
+}
+
+.toast-message {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+  margin-top: -2px;
+  margin-right: -4px;
+}
+
+.toast-close:hover {
+  color: var(--color-text-primary);
+  background: var(--color-sidebar-hover);
+}
+
+.toast-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.toast-detail-section {
+  border-top: 1px solid var(--color-border-light);
+  margin-top: var(--spacing-xs);
+}
+
+.toast-detail-toggle {
+  padding: var(--spacing-sm) var(--spacing-base) var(--spacing-sm) calc(var(--spacing-base) + 26px);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  user-select: none;
+}
+
+.toast-detail-toggle:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.toast-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) var(--spacing-base) var(--spacing-xs) calc(var(--spacing-base) + 26px);
+  background: var(--color-sidebar-bg);
+}
+
+.toast-detail-label {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.toast-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.toast-copy-btn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.toast-copy-btn-copied {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.toast-copy-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.toast-detail-content {
+  padding: var(--spacing-sm) var(--spacing-base) var(--spacing-sm) calc(var(--spacing-base) + 26px);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--color-page-bg);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.toast-progress {
+  height: 3px;
+  background: var(--color-border-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.toast-progress-bar {
+  height: 100%;
+  transition: width 0.1s linear;
+}
+
+.toast-progress-success {
+  background: var(--color-success);
+}
+
+.toast-progress-error {
+  background: var(--color-danger);
+}
+
+.toast-progress-warning {
+  background: var(--color-warning);
+}
+
+.toast-progress-info {
+  background: var(--color-primary);
+}
