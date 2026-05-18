@@ -2,12 +2,13 @@
 
 ## 1. 项目概述
 
-隐向账户系统是一个基于 React 的用户账户管理前端应用，提供用户认证、账户管理、安全设置和管理后台等功能。
+隐向账户系统是一个基于 React 的多页面用户账户管理前端应用，提供用户认证、账户管理、安全设置和管理后台等功能。
 
 - **项目名称**: account.nxdyy.cn
-- **技术栈**: React 19 + Vite + React Router + Zustand + Axios + Framer Motion
+- **技术栈**: React 19 + Vite + Zustand + Axios + Framer Motion
 - **构建工具**: Vite 8
 - **包管理器**: npm/yarn
+- **架构模式**: 多页面应用 (MPA)
 
 ## 2. 技术栈详解
 
@@ -17,10 +18,9 @@
 |------|------|------|
 | react | ^19.2.5 | UI 框架 |
 | react-dom | ^19.2.5 | React DOM 渲染 |
-| react-router-dom | ^7.14.2 | 客户端路由 |
 | zustand | ^5.0.12 | 状态管理 |
 | axios | ^1.16.0 | HTTP 请求 |
-| framer-motion | ^12.38.0 | 页面过渡动画 |
+| framer-motion | ^12.38.0 | 页面进入动画 |
 
 ### 2.2 开发依赖
 
@@ -34,10 +34,56 @@
 
 ```
 account.nxdyy.cn/
+├── pages/                   # 多页面 HTML 入口
+│   ├── login.html           # 登录页入口
+│   ├── login/
+│   │   └── 2fa.html         # 二步验证页入口
+│   ├── register.html        # 注册页入口
+│   ├── forgot/
+│   │   └── password.html    # 找回密码页入口
+│   ├── account.html         # 账户概览入口
+│   ├── account/
+│   │   ├── info.html        # 个人信息入口
+│   │   ├── security.html    # 安全设置入口
+│   │   ├── devices.html     # 设备管理入口
+│   │   ├── privacy.html     # 隐私设置入口
+│   │   └── subscriptions.html # 订阅服务入口
+│   ├── admin.html           # 管理仪表盘入口
+│   └── admin/
+│       ├── users.html       # 用户管理入口
+│       ├── roles.html       # 角色管理入口
+│       ├── permissions.html # 权限管理入口
+│       ├── security/
+│       │   └── config.html  # 安全策略入口
+│       ├── sso.html         # SSO 客户端入口
+│       ├── audit/
+│       │   └── logs.html    # 审计日志入口
+│       └── system/
+│           └── api/
+│               └── mappings.html # 系统运维入口
 ├── public/                  # 静态资源
 ├── docs/                    # 文档目录
 │   └── technical-documentation.md  # 技术文档
 ├── src/
+│   ├── entries/             # 页面入口 JS 文件
+│   │   ├── login.jsx        # 登录页入口
+│   │   ├── login-2fa.jsx    # 二步验证页入口
+│   │   ├── register.jsx     # 注册页入口
+│   │   ├── forgot-password.jsx # 找回密码页入口
+│   │   ├── account.jsx      # 账户概览入口
+│   │   ├── account-info.jsx # 个人信息入口
+│   │   ├── account-security.jsx # 安全设置入口
+│   │   ├── account-devices.jsx  # 设备管理入口
+│   │   ├── account-privacy.jsx  # 隐私设置入口
+│   │   ├── account-subscriptions.jsx # 订阅服务入口
+│   │   ├── admin.jsx        # 管理仪表盘入口
+│   │   ├── admin-users.jsx  # 用户管理入口
+│   │   ├── admin-roles.jsx  # 角色管理入口
+│   │   ├── admin-permissions.jsx # 权限管理入口
+│   │   ├── admin-security-config.jsx # 安全策略入口
+│   │   ├── admin-sso.jsx    # SSO 客户端入口
+│   │   ├── admin-audit-logs.jsx # 审计日志入口
+│   │   └── admin-system-api-mappings.jsx # 系统运维入口
 │   ├── api/                 # API 接口层
 │   │   ├── auth.js          # 认证相关 API
 │   │   ├── user.js          # 用户相关 API
@@ -51,8 +97,8 @@ account.nxdyy.cn/
 │   │   ├── Table.jsx        # 表格组件
 │   │   ├── Toast.jsx        # Toast 通知组件
 │   │   ├── Toast.css        # Toast 样式
-│   │   ├── PageTransition.jsx # 页面过渡动画
-│   │   ├── ProtectedRoute.jsx # 路由守卫
+│   │   ├── PageTransition.jsx # 页面进入动画
+│   │   ├── ProtectedRoute.jsx # 路由守卫（保留用于兼容性）
 │   │   └── Layout/          # 布局组件
 │   │       ├── Layout.jsx   # 主布局
 │   │       ├── Sidebar.jsx  # 侧边栏导航
@@ -79,16 +125,16 @@ account.nxdyy.cn/
 │   │       ├── SecurityConfig.jsx # 安全策略
 │   │       ├── SSOClients.jsx # SSO 客户端
 │   │       ├── AuditLogs.jsx # 审计日志
-│   │       └── SystemApiMappings.jsx # API 映射
+│   │       └── SystemApiMappings.jsx # 系统运维
 │   ├── store/               # 状态管理
 │   │   ├── authStore.js     # 认证状态存储
 │   │   └── toastStore.js    # Toast 通知状态
 │   ├── styles/              # 全局样式
 │   │   └── variables.css    # CSS 变量
 │   ├── index.css            # 全局样式入口
-│   ├── App.jsx              # 应用根组件
-│   └── main.jsx             # 应用入口
-├── index.html               # HTML 模板
+│   ├── App.jsx              # 应用根组件（保留用于开发模式）
+│   └── main.jsx             # 应用入口（保留用于开发模式）
+├── index.html               # HTML 模板（开发模式使用）
 ├── package.json             # 项目配置
 ├── vite.config.js           # Vite 配置
 └── eslint.config.js         # ESLint 配置
@@ -96,58 +142,65 @@ account.nxdyy.cn/
 
 ## 4. 架构设计
 
-### 4.1 分层架构
+### 4.1 多页面架构 (MPA)
+
+本项目采用多页面应用架构，每个页面拥有独立的 HTML 入口和 JS 入口：
 
 ```
-┌─────────────────────────────────────┐
-│           页面层 (Pages)             │
-│  Login / Register / Overview / ...  │
-├─────────────────────────────────────┤
-│           组件层 (Components)        │
-│  Button / Card / Modal / Toast ...  │
-├─────────────────────────────────────┤
-│           状态层 (Store)             │
-│    Zustand Auth Store / Toast Store │
-├─────────────────────────────────────┤
-│           API 层 (API)               │
-│    auth.js / user.js / admin.js     │
-├─────────────────────────────────────┤
-│           客户端 (Client)            │
-│         Axios HTTP Client           │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│              页面入口 (pages/*.html)           │
+│  login.html / account.html / admin.html ...   │
+├─────────────────────────────────────────────┤
+│           JS 入口 (src/entries/*.jsx)          │
+│  login.jsx / account.jsx / admin.jsx ...      │
+├─────────────────────────────────────────────┤
+│              页面组件 (Pages)                  │
+│  Login / Overview / AdminDashboard ...        │
+├─────────────────────────────────────────────┤
+│              组件层 (Components)               │
+│  Button / Card / Modal / Toast / Layout ...   │
+├─────────────────────────────────────────────┤
+│              状态层 (Store)                    │
+│    Zustand Auth Store / Toast Store           │
+├─────────────────────────────────────────────┤
+│              API 层 (API)                      │
+│    auth.js / user.js / admin.js               │
+├─────────────────────────────────────────────┤
+│              客户端 (Client)                   │
+│         Axios HTTP Client                     │
+└─────────────────────────────────────────────┘
 ```
 
-### 4.2 路由结构
+### 4.2 页面结构
 
 ```
-/                           -> 重定向到 /account
-/login                      -> 登录页
-/login/2fa                  -> 二步验证
-/register                   -> 注册页
-/forgot-password            -> 找回密码
+/login                      -> pages/login.html -> src/entries/login.jsx
+/login/2fa                  -> pages/login/2fa.html -> src/entries/login-2fa.jsx
+/register                   -> pages/register.html -> src/entries/register.jsx
+/forgot/password            -> pages/forgot/password.html -> src/entries/forgot-password.jsx
 
-/account                    -> 账户概览 (需登录)
-/account/info               -> 个人信息 (需登录)
-/account/security           -> 安全设置 (需登录)
-/account/devices            -> 设备管理 (需登录)
-/account/privacy            -> 隐私设置 (需登录)
-/account/subscriptions      -> 订阅服务 (需登录)
+/account                    -> pages/account.html -> src/entries/account.jsx
+/account/info               -> pages/account/info.html -> src/entries/account-info.jsx
+/account/security           -> pages/account/security.html -> src/entries/account-security.jsx
+/account/devices            -> pages/account/devices.html -> src/entries/account-devices.jsx
+/account/privacy            -> pages/account/privacy.html -> src/entries/account-privacy.jsx
+/account/subscriptions      -> pages/account/subscriptions.html -> src/entries/account-subscriptions.jsx
 
-/admin                      -> 管理仪表盘 (需管理员)
-/admin/users                -> 用户管理 (需管理员)
-/admin/roles                -> 角色管理 (需管理员)
-/admin/permissions          -> 权限管理 (需管理员)
-/admin/security-config      -> 安全策略 (需管理员)
-/admin/sso                  -> SSO 客户端 (需管理员)
-/admin/audit-logs           -> 审计日志 (需管理员)
-/admin/system/api-mappings  -> 系统运维 (需管理员)
+/admin                      -> pages/admin.html -> src/entries/admin.jsx
+/admin/users                -> pages/admin/users.html -> src/entries/admin-users.jsx
+/admin/roles                -> pages/admin/roles.html -> src/entries/admin-roles.jsx
+/admin/permissions          -> pages/admin/permissions.html -> src/entries/admin-permissions.jsx
+/admin/security/config      -> pages/admin/security/config.html -> src/entries/admin-security-config.jsx
+/admin/sso                  -> pages/admin/sso.html -> src/entries/admin-sso.jsx
+/admin/audit/logs           -> pages/admin/audit/logs.html -> src/entries/admin-audit-logs.jsx
+/admin/system/api/mappings  -> pages/admin/system/api/mappings.html -> src/entries/admin-system-api-mappings.jsx
 ```
 
 ## 5. 核心模块详解
 
 ### 5.1 认证系统 (Auth)
 
-#### 5.1.1 认证流程
+#### 5.1.1 登录流程
 
 1. **登录流程**:
    ```
@@ -163,9 +216,10 @@ account.nxdyy.cn/
 
 3. **初始化流程**:
    ```
-   App 加载 -> initialize() -> 检查 localStorage token
+   页面加载 -> initialize() -> 检查 localStorage token
    -> 有 token: 获取用户信息 + 权限
    -> 无 token: 尝试 refreshToken -> 成功则获取用户信息
+   -> 无权限: 根据页面类型决定跳转
    ```
 
 #### 5.1.2 错误处理规范
@@ -284,12 +338,44 @@ function hasPermission(permissions, permPrefix) {
 }
 ```
 
-#### 5.4.3 路由守卫
+#### 5.4.3 页面级权限控制
 
-```javascript
-// ProtectedRoute 组件
-// - 未登录 -> 跳转登录页
-// - 需要管理员权限但无权限 -> 跳转账户页
+在多页面架构中，权限控制通过以下方式实现：
+1. **服务端渲染前检查**: 后端可在返回 HTML 前检查权限
+2. **客户端初始化检查**: 每个页面入口组件初始化时检查权限
+3. **导航控制**: Sidebar 根据权限动态显示导航项
+
+### 5.5 页面动画
+
+#### 5.5.1 页面进入动画
+
+所有页面使用 `PageTransition` 组件实现统一的进入动画：
+
+```jsx
+import PageTransition from '../components/PageTransition'
+
+// 在页面入口中使用
+<PageTransition>
+  <Login />
+</PageTransition>
+```
+
+动画参数：
+- **初始状态**: opacity: 0, y: 14
+- **进入状态**: opacity: 1, y: 0
+- **持续时间**: 0.25s
+- **缓动函数**: easeOut
+
+#### 5.5.2 布局内页面切换
+
+在带 Layout 的页面中，动画同样通过 PageTransition 实现：
+
+```jsx
+<Layout>
+  <PageTransition>
+    <Overview />
+  </PageTransition>
+</Layout>
 ```
 
 ## 6. 组件系统
@@ -388,11 +474,11 @@ function hasPermission(permissions, permPrefix) {
 全局通知组件，支持自动关闭、悬停暂停、查看详情、一键复制。
 
 ```jsx
-// 在 App.jsx 中挂载
+// 在页面入口中挂载
 <ToastContainer />
 
 // 使用方式
-import { showError, showSuccess, showWarning } from './store/toastStore'
+import { showError, showSuccess, showWarning } from '../store/toastStore'
 
 // 简单提示
 showError('操作失败')
@@ -425,12 +511,16 @@ showError('请求失败', {
 ```jsx
 // 普通布局
 <Layout>
-  <Outlet />
+  <PageTransition>
+    <Overview />
+  </PageTransition>
 </Layout>
 
 // 宽屏布局（管理后台）
 <Layout wide>
-  <Outlet />
+  <PageTransition>
+    <AdminDashboard />
+  </PageTransition>
 </Layout>
 ```
 
@@ -514,6 +604,7 @@ showError('请求失败', {
 - 组件文件：PascalCase.jsx（如 `Login.jsx`）
 - 工具文件：camelCase.js（如 `authStore.js`）
 - CSS 文件：与组件同名（如 `Login.jsx` + `Auth.css`）
+- 页面入口：kebab-case.jsx（如 `account-security.jsx`）
 
 ### 8.3 组件规范
 
@@ -533,6 +624,13 @@ showError('请求失败', {
 - 全局状态使用 Zustand
 - 局部状态使用 useState/useReducer
 - 避免过度使用全局状态
+
+### 8.6 多页面开发规范
+
+- 每个页面必须有独立的 HTML 入口（pages/*.html）
+- 每个页面必须有独立的 JS 入口（src/entries/*.jsx）
+- 页面间通过标准 `<a>` 标签或 `window.location` 跳转
+- 共享组件和状态通过 Zustand 管理
 
 ## 9. 构建与部署
 
@@ -563,21 +661,77 @@ npm run preview
 
 ```javascript
 // vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
+
+// 多页面入口配置
+const pages = {
+  login: resolve(__dirname, 'pages/login.html'),
+  'login/2fa': resolve(__dirname, 'pages/login/2fa.html'),
+  register: resolve(__dirname, 'pages/register.html'),
+  'forgot/password': resolve(__dirname, 'pages/forgot/password.html'),
+  account: resolve(__dirname, 'pages/account.html'),
+  'account/info': resolve(__dirname, 'pages/account/info.html'),
+  // ... 其他页面
+}
+
 export default defineConfig({
   plugins: [react()],
   build: {
-    emptyOutDir: false,  // 不清空输出目录
+    emptyOutDir: true,
+    rollupOptions: {
+      input: pages,
+    },
   },
 })
+```
+
+### 9.4 构建输出结构
+
+```
+dist/
+├── login.html                    # 登录页
+├── login/
+│   └── 2fa.html                  # 二步验证页
+├── register.html                 # 注册页
+├── forgot/
+│   └── password.html             # 找回密码页
+├── account.html                  # 账户概览
+├── account/
+│   ├── info.html                 # 个人信息
+│   ├── security.html             # 安全设置
+│   ├── devices.html              # 设备管理
+│   ├── privacy.html              # 隐私设置
+│   └── subscriptions.html        # 订阅服务
+├── admin.html                    # 管理仪表盘
+├── admin/
+│   ├── users.html                # 用户管理
+│   ├── roles.html                # 角色管理
+│   ├── permissions.html          # 权限管理
+│   ├── security/
+│   │   └── config.html           # 安全策略
+│   ├── sso.html                  # SSO 客户端
+│   ├── audit/
+│   │   └── logs.html             # 审计日志
+│   └── system/
+│       └── api/
+│           └── mappings.html     # 系统运维
+└── assets/                       # 静态资源
+    ├── login-[hash].js
+    ├── login-2fa-[hash].js
+    └── ...
 ```
 
 ## 10. 扩展指南
 
 ### 10.1 添加新页面
 
-1. 在 `src/pages/` 下创建新页面组件
-2. 在 `src/App.jsx` 中添加路由
-3. 如需导航，在 `Sidebar.jsx` 中添加导航项
+1. 在 `src/pages/` 下创建新页面组件（如 `NewPage.jsx`）
+2. 在 `pages/` 下创建 HTML 入口文件（如 `new-page.html`）
+3. 在 `src/entries/` 下创建 JS 入口文件（如 `new-page.jsx`）
+4. 在 `vite.config.js` 中添加页面配置
+5. 如需导航，在 `Sidebar.jsx` 中添加导航项
 
 ### 10.2 添加新 API
 
@@ -626,14 +780,15 @@ try {
 
 ### 11.3 权限控制
 
-- 路由级别：`ProtectedRoute` 组件
-- 导航级别：`Sidebar` 根据权限过滤导航项
-- 操作级别：前端隐藏无权限操作，后端做最终校验
+在多页面架构中：
+- **页面级别**: 后端可在返回 HTML 前进行权限检查
+- **导航级别**: `Sidebar` 根据权限过滤导航项
+- **操作级别**: 前端隐藏无权限操作，后端做最终校验
 
 ### 11.4 Toast 通知使用
 
 ```javascript
-import { showError, showSuccess, showWarning } from './store/toastStore'
+import { showError, showSuccess, showWarning } from '../store/toastStore'
 
 // 简单提示
 showError('操作失败')
@@ -648,4 +803,39 @@ showError('请求失败', {
 
 // 显示错误详情和堆栈
 showError('操作失败', err.stack || err.message)
+```
+
+### 11.5 页面跳转
+
+在多页面架构中，使用标准方式跳转：
+
+```javascript
+// 方式 1: 使用 window.location（完整页面刷新）
+window.location.href = '/account'
+
+// 方式 2: 使用 react-router 的 navigate（同域页面间）
+import { useNavigate } from 'react-router-dom'
+const navigate = useNavigate()
+navigate('/account')
+
+// 方式 3: 使用 <Link> 组件
+import { Link } from 'react-router-dom'
+<Link to="/account">账户</Link>
+```
+
+### 11.6 页面间状态共享
+
+由于是多页面应用，状态不能直接共享。使用以下方式：
+
+1. **localStorage**: 存储持久化状态
+2. **Cookies**: 存储认证信息
+3. **后端 API**: 获取共享数据
+4. **URL 参数**: 传递简单数据
+
+```javascript
+// 存储到 localStorage
+localStorage.setItem('key', JSON.stringify(data))
+
+// 从 localStorage 读取
+const data = JSON.parse(localStorage.getItem('key'))
 ```

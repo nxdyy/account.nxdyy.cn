@@ -88,7 +88,7 @@ export default function Login() {
             </Button>
 
             <div className="auth-links">
-              <Link to="/forgot-password">忘记密码</Link>
+              <Link to="/forgot/password">忘记密码</Link>
               <Link to="/register">创建新帐户</Link>
             </div>
           </form>
