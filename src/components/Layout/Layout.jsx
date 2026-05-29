@@ -1,16 +1,23 @@
+import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import TopBar from './TopBar'
 import Sidebar from './Sidebar'
+import Footer from './Footer'
 import './Layout.css'
 
 export default function Layout({ wide = false }) {
   const location = useLocation()
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => !prev)
+  }
 
   return (
-    <div className="layout">
-      <TopBar />
-      <Sidebar />
+    <div className={`layout ${isSidebarCollapsed ? 'layout-sidebar-collapsed' : ''}`}>
+      <TopBar onToggleSidebar={toggleSidebar} isSidebarCollapsed={isSidebarCollapsed} />
+      <Sidebar isCollapsed={isSidebarCollapsed} />
       <main className="layout-main">
         <div className={wide ? 'layout-content-wide' : 'layout-content'}>
           <AnimatePresence mode="wait">
@@ -26,6 +33,7 @@ export default function Layout({ wide = false }) {
           </AnimatePresence>
         </div>
       </main>
+      <Footer />
     </div>
   )
 }

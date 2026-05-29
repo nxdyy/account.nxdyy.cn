@@ -18,6 +18,27 @@
   gap: var(--spacing-md);
 }
 
+.topbar-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  width: 32px;
+  height: 32px;
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.topbar-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.topbar-menu-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .topbar-logo {
   width: 24px;
   height: 24px;
@@ -79,15 +100,4 @@
   height: 18px;
 }
 
-.topbar-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-}
+

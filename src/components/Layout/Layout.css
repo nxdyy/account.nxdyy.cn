@@ -1,21 +1,31 @@
 .layout {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .layout-main {
   margin-left: var(--sidebar-width);
   padding-top: var(--topbar-height);
-  min-height: 100vh;
+  min-height: calc(100vh - var(--topbar-height));
+  flex: 1;
+  transition: margin-left var(--transition-normal);
+}
+
+.layout-sidebar-collapsed .layout-main {
+  margin-left: var(--sidebar-collapsed-width);
 }
 
 .layout-content {
   max-width: 960px;
   margin: 0 auto;
   padding: var(--spacing-xl) var(--spacing-lg);
+  min-height: calc(100vh - var(--topbar-height));
 }
 
 .layout-content-wide {
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-xl) var(--spacing-lg);
+  min-height: calc(100vh - var(--topbar-height));
 }

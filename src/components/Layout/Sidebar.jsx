@@ -1,4 +1,6 @@
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import useAuthStore from '../../store/authStore'
 import './Sidebar.css'
 
@@ -47,6 +49,9 @@ function ServerIcon() {
 function LogoutIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
 }
+function ChevronDownIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+}
 
 const userNavItems = [
   { path: '/account', label: '帐户', icon: AccountIcon },
@@ -72,10 +77,72 @@ function hasPermission(permissions, permPrefix) {
   return Array.isArray(permissions) && permissions.some((p) => p.startsWith(permPrefix))
 }
 
-export default function Sidebar() {
+const sidebarVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.3,
+      ease: [0.25, 0.46, 0.45, 0.94],
+      staggerChildren: 0.05,
+      delayChildren: 0.1,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.25,
+      ease: 'easeOut',
+    },
+  },
+}
+
+const adminSectionVariants = {
+  hidden: { opacity: 0, height: 0 },
+  visible: {
+    opacity: 1,
+    height: 'auto',
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut',
+      staggerChildren: 0.04,
+      delayChildren: 0.05,
+    },
+  },
+  exit: {
+    opacity: 0,
+    height: 0,
+    transition: {
+      duration: 0.2,
+      ease: 'easeIn',
+    },
+  },
+}
+
+const adminLabelVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.2,
+      ease: 'easeOut',
+    },
+  },
+}
+
+export default function Sidebar({ isCollapsed = false }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout, isAuthenticated, permissions } = useAuthStore()
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const userMenuRef = useRef(null)
 
   if (!isAuthenticated) return null
 
@@ -92,6 +159,26 @@ export default function Sidebar() {
     navigate('/login')
   }
 
+  const toggleUserMenu = () => {
+    setIsUserMenuOpen((prev) => !prev)
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isUserMenuOpen])
+
   const isActive = (path) => {
     if (path === '/account') {
       return location.pathname === '/account'
@@ -103,50 +190,96 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-user">
+    <motion.aside
+      className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''}`}
+      variants={sidebarVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div
+        className={`sidebar-user ${isUserMenuOpen ? 'menu-open' : ''}`}
+        variants={itemVariants}
+        onClick={!isCollapsed ? toggleUserMenu : undefined}
+        ref={userMenuRef}
+      >
         <div className="sidebar-avatar-lg">{initials}</div>
-        <div className="sidebar-user-info">
-          <div className="sidebar-user-name">{user?.nickname || user?.username || user?.email}</div>
-          <div className="sidebar-user-email">{user?.email}</div>
-        </div>
-      </div>
+        {!isCollapsed && (
+          <>
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">{user?.nickname || user?.username || user?.email}</div>
+              <div className="sidebar-user-email">{user?.email}</div>
+            </div>
+            <div className="sidebar-user-chevron">
+              <ChevronDownIcon />
+            </div>
+          </>
+        )}
+
+        <AnimatePresence>
+          {isUserMenuOpen && !isCollapsed && (
+            <motion.div
+              className="sidebar-user-menu"
+              initial={{ opacity: 0, y: -8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+            >
+              <button className="sidebar-user-menu-item" onClick={handleLogout}>
+                <LogoutIcon />
+                <span>退出登录</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       <nav className="sidebar-nav">
         {userNavItems.map((item) => (
-          <button
+          <motion.button
             key={item.path}
             className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
             onClick={() => navigate(item.path)}
+            variants={itemVariants}
+            whileHover={{ x: isCollapsed ? 0 : 4 }}
+            whileTap={{ scale: 0.98 }}
+            title={isCollapsed ? item.label : ''}
           >
             <item.icon />
-            <span>{item.label}</span>
-          </button>
+            {!isCollapsed && <span>{item.label}</span>}
+          </motion.button>
         ))}
 
-        {visibleAdminItems.length > 0 && (
-          <>
-            <div className="sidebar-section-label">管理</div>
-            {visibleAdminItems.map((item) => (
-              <button
-                key={item.path}
-                className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
-                onClick={() => navigate(item.path)}
-              >
-                <item.icon />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </>
-        )}
+        <AnimatePresence>
+          {visibleAdminItems.length > 0 && (
+            <motion.div
+              variants={adminSectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              {!isCollapsed && (
+                <motion.div className="sidebar-section-label" variants={adminLabelVariants}>
+                  管理
+                </motion.div>
+              )}
+              {visibleAdminItems.map((item) => (
+                <motion.button
+                  key={item.path}
+                  className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
+                  onClick={() => navigate(item.path)}
+                  variants={itemVariants}
+                  whileHover={{ x: isCollapsed ? 0 : 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  title={isCollapsed ? item.label : ''}
+                >
+                  <item.icon />
+                  {!isCollapsed && <span>{item.label}</span>}
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
-
-      <div className="sidebar-footer">
-        <button className="sidebar-footer-btn" onClick={handleLogout}>
-          <LogoutIcon />
-          <span>退出登录</span>
-        </button>
-      </div>
-    </aside>
+    </motion.aside>
   )
 }

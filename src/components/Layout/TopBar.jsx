@@ -1,6 +1,15 @@
-import useAuthStore from '../../store/authStore'
 import useThemeStore from '../../store/themeStore'
 import './TopBar.css'
+
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  )
+}
 
 function LogoIcon() {
   return (
@@ -47,18 +56,16 @@ function MoonIcon() {
   )
 }
 
-export default function TopBar() {
-  const user = useAuthStore((s) => s.user)
+export default function TopBar({ onToggleSidebar, isSidebarCollapsed }) {
   const theme = useThemeStore((s) => s.theme)
   const toggleTheme = useThemeStore((s) => s.toggleTheme)
-
-  const initials = user
-    ? (user.nickname || user.username || user.email || '?').charAt(0).toUpperCase()
-    : '?'
 
   return (
     <header className="topbar">
       <div className="topbar-brand">
+        <button className="topbar-menu-btn" onClick={onToggleSidebar} title={isSidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'}>
+          <MenuIcon />
+        </button>
         <span className="topbar-logo"><LogoIcon /></span>
         <span className="topbar-title">隐向账户</span>
       </div>
@@ -70,7 +77,6 @@ export default function TopBar() {
           <HelpIcon />
           <span>帮助</span>
         </button>
-        <div className="topbar-avatar" title={user?.email}>{initials}</div>
       </div>
     </header>
   )
