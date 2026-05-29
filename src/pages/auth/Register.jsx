@@ -4,6 +4,7 @@ import { register, sendRegisterCode, confirmRegister } from '../../api/auth'
 import { showError, showSuccess } from '../../store/toastStore'
 import Button from '../../components/Button'
 import { FormGroup, FormLabel, FormInput } from '../../components/Input'
+import AuthFooter from '../../components/AuthFooter'
 import './Auth.css'
 
 function LogoIcon() {
@@ -203,6 +204,7 @@ export default function Register() {
           <a href="#">服务协议</a> 和 <a href="#">隐私声明</a>
         </div>
       </div>
+      <AuthFooter />
     </div>
   )
 }

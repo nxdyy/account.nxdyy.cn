@@ -4,6 +4,7 @@ import useAuthStore from '../../store/authStore'
 import { showError } from '../../store/toastStore'
 import Button from '../../components/Button'
 import { FormGroup, FormLabel, FormInput } from '../../components/Input'
+import AuthFooter from '../../components/AuthFooter'
 import './Auth.css'
 
 function LogoIcon() {
@@ -99,6 +100,7 @@ export default function Login() {
           <a href="#">服务协议</a> 和 <a href="#">隐私声明</a>
         </div>
       </div>
+      <AuthFooter />
     </div>
   )
 }

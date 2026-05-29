@@ -4,6 +4,7 @@ import useAuthStore from '../../store/authStore'
 import { showError } from '../../store/toastStore'
 import Button from '../../components/Button'
 import { FormGroup, FormLabel, FormInput } from '../../components/Input'
+import AuthFooter from '../../components/AuthFooter'
 import './Auth.css'
 
 export default function Login2FA() {
@@ -63,6 +64,7 @@ export default function Login2FA() {
           </form>
         </div>
       </div>
+      <AuthFooter />
     </div>
   )
 }
