@@ -48,8 +48,8 @@ export function setUserPermissionsOverride(id, data) {
   return client.put(`/admin/users/${id}/permissions-override`, data)
 }
 
-export function getRoles() {
-  return client.get('/admin/roles')
+export function getRoles(params) {
+  return client.get('/admin/roles', { params })
 }
 
 export function createRole(data) {
@@ -64,6 +64,10 @@ export function updateRole(id, data) {
   return client.put(`/admin/roles/${id}`, data)
 }
 
+export function updateRoleStatus(id, data) {
+  return client.patch(`/admin/roles/${id}/status`, data)
+}
+
 export function deleteRole(id) {
   return client.delete(`/admin/roles/${id}`)
 }
@@ -74,6 +78,10 @@ export function getRolePermissionsTree(id) {
 
 export function setRolePermissionsTree(id, data) {
   return client.put(`/admin/roles/${id}/permissions-tree`, data)
+}
+
+export function getRoleUsers(id) {
+  return client.get(`/admin/roles/${id}/users`)
 }
 
 export function getPermissions() {
@@ -112,12 +120,24 @@ export function getSSOClients() {
   return client.get('/admin/sso/clients')
 }
 
+export function getSSOClient(id) {
+  return client.get(`/admin/sso/clients/${id}`)
+}
+
 export function createSSOClient(data) {
   return client.post('/admin/sso/clients', data)
 }
 
 export function updateSSOClient(id, data) {
   return client.put(`/admin/sso/clients/${id}`, data)
+}
+
+export function updateSSOClientStatus(id, data) {
+  return client.patch(`/admin/sso/clients/${id}/status`, data)
+}
+
+export function regenerateSSOClientSecret(id) {
+  return client.post(`/admin/sso/clients/${id}/regenerate-secret`)
 }
 
 export function deleteSSOClient(id) {

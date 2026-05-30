@@ -7,32 +7,40 @@ import { FormInput } from '../../components/Input'
 import './Admin.css'
 import '../account/Account.css'
 
+function RefreshIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+}
+
 export default function AuditLogs() {
   const [loginLogs, setLoginLogs] = useState([])
   const [actionLogs, setActionLogs] = useState([])
-  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('login')
   const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [userId, setUserId] = useState('')
   const pageSize = 20
 
   const fetchData = () => {
-    setLoading(true)
     const fetcher = tab === 'login' ? getLoginLogs : getActionLogs
     const params = { page, page_size: pageSize }
     if (userId) params.user_id = userId
     fetcher(params)
       .then((res) => {
         const data = res.data.data
-        const list = data.list || data || []
+        const list = data.list || []
+        const t = data.total || 0
         if (tab === 'login') setLoginLogs(list)
         else setActionLogs(list)
+        setTotal(t)
       })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+      .catch(() => {
+        // ignore
+      })
   }
 
-  useEffect(() => { fetchData() }, [tab, page])
+  useEffect(() => {
+    fetchData()
+  }, [tab, page])
 
   const handleSearch = () => {
     setPage(1)
@@ -41,19 +49,18 @@ export default function AuditLogs() {
 
   const loginColumns = [
     { key: 'created_at', title: '时间', render: (v) => v ? new Date(v).toLocaleString() : '-' },
-    { key: 'username', title: '用户' },
-    { key: 'success', title: '状态', render: (v) => v ? <Badge type="success">成功</Badge> : <Badge type="danger">失败</Badge> },
+    { key: 'user_id', title: '用户ID' },
+    { key: 'success', title: '状态', render: (v) => v === true ? <Badge type="success">成功</Badge> : <Badge type="danger">失败</Badge> },
     { key: 'ip_address', title: 'IP 地址' },
-    { key: 'location', title: '位置', render: (v) => v || '-' },
-    { key: 'reason', title: '备注', render: (v) => v || '-' },
+    { key: 'user_agent', title: '设备信息', render: (v) => v ? <span className="text-sm">{v.substring(0, 40)}</span> : '-' },
   ]
 
   const actionColumns = [
     { key: 'created_at', title: '时间', render: (v) => v ? new Date(v).toLocaleString() : '-' },
     { key: 'user_id', title: '用户ID' },
     { key: 'action', title: '操作', render: (v) => <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{v}</span> },
-    { key: 'resource_type', title: '资源类型' },
-    { key: 'resource_id', title: '资源ID', render: (v) => v || '-' },
+    { key: 'target', title: '目标类型' },
+    { key: 'target_id', title: '目标ID', render: (v) => v || '-' },
     { key: 'ip_address', title: 'IP 地址' },
   ]
 
@@ -87,7 +94,13 @@ export default function AuditLogs() {
             onChange={(e) => setUserId(e.target.value)}
           />
           <Button variant="secondary" size="sm" onClick={handleSearch}>筛选</Button>
+          <Button type="button" variant="text" size="sm" onClick={fetchData} title="刷新">
+            <RefreshIcon />
+          </Button>
         </div>
+        <span className="text-secondary" style={{ fontSize: 'var(--font-size-sm)' }}>
+          共 {total} 条记录
+        </span>
       </div>
 
       <Card>
@@ -96,11 +109,13 @@ export default function AuditLogs() {
         </CardBody>
       </Card>
 
-      <div className="pagination">
-        <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>上一页</Button>
-        <span className="pagination-info">第 {page} 页</span>
-        <Button variant="secondary" size="sm" onClick={() => setPage(page + 1)}>下一页</Button>
-      </div>
+      {total > pageSize && (
+        <div className="pagination">
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>上一页</Button>
+          <span className="pagination-info">第 {page} 页 / 共 {Math.ceil(total / pageSize)} 页</span>
+          <Button variant="secondary" size="sm" disabled={page * pageSize >= total} onClick={() => setPage(page + 1)}>下一页</Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -97,7 +97,10 @@ function ToastItem({ toast }) {
   const remainingRef = useRef(toast.duration)
   const isPausedRef = useRef(false)
   const intervalRef = useRef(null)
-  const lastTickRef = useRef(Date.now())
+  const lastTickRef = useRef(0)
+  useEffect(() => {
+    lastTickRef.current = Date.now()
+  }, [])
 
   const detailText = formatDetail(toast.detail)
   const hasDetail = detailText && detailText.length > 0

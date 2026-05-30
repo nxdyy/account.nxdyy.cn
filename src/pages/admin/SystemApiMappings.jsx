@@ -14,29 +14,34 @@ function ServerIcon() {
 }
 
 function RefreshIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+}
+
+function RestartIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
 }
 
 export default function SystemApiMappings() {
   const [mappings, setMappings] = useState([])
-  const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ method: '', path: '', permission_key: '', description: '' })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [restartConfirm, setRestartConfirm] = useState(false)
 
   const fetchData = async () => {
-    setLoading(true)
     try {
       const res = await getApiMappings()
       setMappings(res.data.data || [])
-    } catch {} finally {
-      setLoading(false)
+    } catch {
+      // ignore
     }
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   const openEdit = (m) => {
     setEditing(m)
@@ -81,6 +86,23 @@ export default function SystemApiMappings() {
     }
   }
 
+  const handleRestart = async () => {
+    try {
+      await restartServer()
+      showSuccess('服务器重启指令已发送')
+      setRestartConfirm(false)
+    } catch (err) {
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '重启失败'
+      }
+      showError(msg)
+      setRestartConfirm(false)
+    }
+  }
+
   const columns = [
     { key: 'method', title: '方法', render: (v) => <span className={`badge badge-${v === 'GET' ? 'success' : v === 'POST' ? 'neutral' : v === 'PUT' || v === 'PATCH' ? 'warning' : 'danger'}`}>{v}</span> },
     { key: 'path', title: '路径', render: (v) => <code className="config-value">{v}</code> },
@@ -109,6 +131,10 @@ export default function SystemApiMappings() {
           <Button variant="secondary" onClick={handleReload}>
             <RefreshIcon />
             重载映射
+          </Button>
+          <Button variant="danger" onClick={() => setRestartConfirm(true)}>
+            <RestartIcon />
+            重启服务器
           </Button>
         </div>
       </div>
@@ -154,6 +180,22 @@ export default function SystemApiMappings() {
           <FormLabel>说明</FormLabel>
           <FormInput value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="可选说明" />
         </FormGroup>
+      </Modal>
+
+      <Modal
+        open={restartConfirm}
+        onClose={() => setRestartConfirm(false)}
+        title="确认重启服务器"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setRestartConfirm(false)}>取消</Button>
+            <Button variant="danger" onClick={handleRestart}>确认重启</Button>
+          </>
+        }
+      >
+        <p className="text-secondary">
+          确认要重启服务器吗？此操作将导致所有用户暂时无法访问系统，请谨慎操作。
+        </p>
       </Modal>
     </div>
   )

@@ -23,6 +23,7 @@ function BellIcon() {
 export default function Security() {
   const [twofaSetup, setTwofaSetup] = useState(null)
   const [alerts, setAlerts] = useState([])
+  const [alertsTotal, setAlertsTotal] = useState(0)
   const [pwdModal, setPwdModal] = useState(false)
   const [twofaModal, setTwofaModal] = useState(false)
   const [twofaCode, setTwofaCode] = useState('')
@@ -45,9 +46,10 @@ export default function Security() {
 
   useEffect(() => {
     refresh2FAStatus()
-    getSecurityAlerts().then((res) => {
-      const data = res.data.data
-      setAlerts(data?.list || data || [])
+    getSecurityAlerts({ page: 1, page_size: 20 }).then((res) => {
+      const data = res.data.data || {}
+      setAlerts(data.list || [])
+      setAlertsTotal(data.total || 0)
     }).catch(() => {})
   }, [])
 
@@ -171,7 +173,10 @@ export default function Security() {
     try {
       await markAlertRead(id)
       setAlerts((prev) => prev.filter((a) => a.id !== id))
-    } catch {}
+      setAlertsTotal((prev) => Math.max(0, prev - 1))
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -219,7 +224,7 @@ export default function Security() {
       </Card>
 
       <Card>
-        <CardHeader icon={BellIcon} title="安全提醒" subtitle="查看帐户安全相关提醒" accent />
+        <CardHeader icon={BellIcon} title="安全提醒" subtitle={`${alertsTotal > 0 ? alertsTotal + ' 条未读提醒' : '暂无安全提醒'}`} accent />
         <CardBody>
           {alerts.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 'var(--spacing-lg)', color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-sm)' }}>
@@ -227,7 +232,7 @@ export default function Security() {
             </div>
           ) : (
             alerts.map((alert) => (
-              <CardRow key={alert.id} label={alert.title} value={alert.content}>
+              <CardRow key={alert.id} label={alert.title} value={alert.message || alert.content}>
                 <Button variant="text" size="sm" onClick={() => handleReadAlert(alert.id)}>标记已读</Button>
               </CardRow>
             ))

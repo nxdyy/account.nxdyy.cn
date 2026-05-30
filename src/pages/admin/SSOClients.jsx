@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getSSOClients, createSSOClient, updateSSOClient, deleteSSOClient } from '../../api/admin'
+import {
+  getSSOClients, getSSOClient, createSSOClient, updateSSOClient,
+  updateSSOClientStatus, regenerateSSOClientSecret, deleteSSOClient,
+} from '../../api/admin'
 import { OAUTH_SCOPES, SCOPE_GROUPS } from '../../api/oauth2'
 import { showError, showSuccess } from '../../store/toastStore'
 import Card, { CardBody } from '../../components/Card'
@@ -12,6 +15,10 @@ import '../oauth/OAuth.css'
 
 function CopyIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+}
+
+function RefreshIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
 }
 
 function ScopeSelector({ value, onChange }) {
@@ -88,13 +95,13 @@ function ScopeSelector({ value, onChange }) {
 
 export default function SSOClients() {
   const [clients, setClients] = useState([])
-  const [, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({
     client_id: '',
     client_secret: '',
     name: '',
+    logo: '',
     redirect_uris: '',
     grant_types: 'authorization_code,refresh_token',
     scopes: '',
@@ -102,20 +109,21 @@ export default function SSOClients() {
   const [showSecret, setShowSecret] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [detailClient, setDetailClient] = useState(null)
+  const [regeneratedSecret, setRegeneratedSecret] = useState('')
 
   const fetchData = async () => {
-    setLoading(true)
     try {
       const res = await getSSOClients()
       setClients(res.data.data || [])
     } catch {
       showError('获取客户端列表失败')
-    } finally {
-      setLoading(false)
     }
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   const openCreate = () => {
     setEditing(null)
@@ -123,6 +131,7 @@ export default function SSOClients() {
       client_id: '',
       client_secret: '',
       name: '',
+      logo: '',
       redirect_uris: '',
       grant_types: 'authorization_code,refresh_token',
       scopes: '',
@@ -138,6 +147,7 @@ export default function SSOClients() {
       client_id: c.client_id || '',
       client_secret: '',
       name: c.name || '',
+      logo: c.logo || '',
       redirect_uris: c.redirect_uris || '',
       grant_types: c.grant_types || 'authorization_code,refresh_token',
       scopes: c.scopes || '',
@@ -145,6 +155,16 @@ export default function SSOClients() {
     setShowSecret(false)
     setError('')
     setModalOpen(true)
+  }
+
+  const openDetail = async (c) => {
+    try {
+      const res = await getSSOClient(c.id)
+      setDetailClient(res.data.data)
+      setRegeneratedSecret('')
+    } catch {
+      showError('获取客户端详情失败')
+    }
   }
 
   const handleSubmit = async () => {
@@ -181,6 +201,38 @@ export default function SSOClients() {
     }
   }
 
+  const handleToggleStatus = async (c) => {
+    try {
+      await updateSSOClientStatus(c.id, { is_active: !c.is_active })
+      fetchData()
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleRegenerateSecret = async (c) => {
+    if (!window.confirm(`确认重新生成客户端 "${c.name}" 的密钥吗？旧密钥将立即失效。`)) return
+    try {
+      const res = await regenerateSSOClientSecret(c.id)
+      const newSecret = res.data.data?.client_secret
+      if (newSecret) {
+        setRegeneratedSecret(newSecret)
+        showSuccess('密钥已重新生成')
+        if (detailClient && detailClient.id === c.id) {
+          setDetailClient((prev) => ({ ...prev, client_secret: newSecret }))
+        }
+      }
+    } catch (err) {
+      let msg
+      if (!err.response) {
+        msg = '无法连接到服务器，请检查网络连接'
+      } else {
+        msg = err.response.data?.message || '重新生成失败'
+      }
+      showError(msg)
+    }
+  }
+
   const handleDelete = async (c) => {
     if (!window.confirm(`确认删除客户端 "${c.name}" 吗？此操作不可撤销。`)) return
     try {
@@ -209,7 +261,12 @@ export default function SSOClients() {
     {
       key: 'name',
       title: '客户端名称',
-      render: (v) => <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{v}</span>,
+      render: (v, row) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+          {row.logo && <img src={row.logo} alt="" style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)' }} />}
+          <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{v}</span>
+        </div>
+      ),
     },
     {
       key: 'client_id',
@@ -287,7 +344,12 @@ export default function SSOClients() {
       title: '操作',
       render: (_, row) => (
         <div className="table-actions">
+          <Button variant="text" size="sm" onClick={() => openDetail(row)}>详情</Button>
           <Button variant="text" size="sm" onClick={() => openEdit(row)}>编辑</Button>
+          <Button variant="text" size="sm" onClick={() => handleToggleStatus(row)}>
+            {row.is_active ? '禁用' : '启用'}
+          </Button>
+          <Button variant="text" size="sm" onClick={() => handleRegenerateSecret(row)}>重置密钥</Button>
           <Button variant="text" size="sm" onClick={() => handleDelete(row)} style={{ color: 'var(--color-danger)' }}>删除</Button>
         </div>
       ),
@@ -377,6 +439,14 @@ export default function SSOClients() {
           />
         </FormGroup>
         <FormGroup>
+          <FormLabel>Logo URL</FormLabel>
+          <FormInput
+            value={form.logo}
+            onChange={(e) => setForm({ ...form, logo: e.target.value })}
+            placeholder="https://example.com/logo.png"
+          />
+        </FormGroup>
+        <FormGroup>
           <FormLabel>回调地址</FormLabel>
           <FormInput
             value={form.redirect_uris}
@@ -402,6 +472,73 @@ export default function SSOClients() {
             onChange={(scopes) => setForm({ ...form, scopes })}
           />
         </FormGroup>
+      </Modal>
+
+      <Modal
+        open={!!detailClient}
+        onClose={() => { setDetailClient(null); setRegeneratedSecret('') }}
+        title={detailClient ? `客户端详情: ${detailClient.name}` : '客户端详情'}
+        footer={
+          <Button variant="secondary" onClick={() => { setDetailClient(null); setRegeneratedSecret('') }}>关闭</Button>
+        }
+      >
+        {detailClient && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-base)' }}>
+            <div>
+              <div className="text-secondary" style={{ fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-xs)' }}>Client ID</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
+                <code className="config-value">{detailClient.client_id}</code>
+                <button type="button" className="btn-text btn-xs" onClick={() => copyToClipboard(detailClient.client_id)} title="复制">
+                  <CopyIcon />
+                </button>
+              </div>
+            </div>
+            <div>
+              <div className="text-secondary" style={{ fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-xs)' }}>Client Secret</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
+                <code className="config-value">{regeneratedSecret || detailClient.client_secret || '***'}</code>
+                <button type="button" className="btn-text btn-xs" onClick={() => copyToClipboard(regeneratedSecret || detailClient.client_secret)} title="复制">
+                  <CopyIcon />
+                </button>
+              </div>
+              {regeneratedSecret && (
+                <div className="auth-success" style={{ marginTop: 'var(--spacing-sm)' }}>
+                  密钥已重新生成，请妥善保存
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="text-secondary" style={{ fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-xs)' }}>回调地址</div>
+              <div className="text-sm" style={{ wordBreak: 'break-all' }}>{detailClient.redirect_uris}</div>
+            </div>
+            <div>
+              <div className="text-secondary" style={{ fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-xs)' }}>授权类型</div>
+              <div className="text-sm">{detailClient.grant_types}</div>
+            </div>
+            <div>
+              <div className="text-secondary" style={{ fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-xs)' }}>授权范围</div>
+              <div className="text-sm">{detailClient.scopes || '-'}</div>
+            </div>
+            <div>
+              <div className="text-secondary" style={{ fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-xs)' }}>状态</div>
+              <span style={{
+                fontSize: 'var(--font-size-xs)',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-sm)',
+                background: detailClient.is_active ? 'var(--color-success-light)' : 'var(--color-danger-light)',
+                color: detailClient.is_active ? 'var(--color-success)' : 'var(--color-danger)',
+                fontWeight: 'var(--font-weight-medium)',
+              }}>
+                {detailClient.is_active ? '启用' : '禁用'}
+              </span>
+            </div>
+            <div>
+              <Button variant="secondary" size="sm" onClick={() => handleRegenerateSecret(detailClient)}>
+                <RefreshIcon /> 重新生成密钥
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

@@ -131,7 +131,7 @@ export default function ForgotPassword() {
 
         <div className="auth-footer">
           继续即表示你同意隐向的{' '}
-          <a href="#">服务协议</a> 和 <a href="#">隐私声明</a>
+          <Link to="/terms">服务协议</Link> 和 <Link to="/privacy">隐私声明</Link>
         </div>
       </div>
       <AuthFooter />

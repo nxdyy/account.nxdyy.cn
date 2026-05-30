@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { getMyLoginLogs, getMyActionLogs } from '../../api/user'
 import Card, { CardHeader, CardBody } from '../../components/Card'
 import Table, { Badge } from '../../components/Table'
-import Button from '../../components/Button'
 import './Account.css'
 
 function PrivacyIcon() {
@@ -17,29 +16,34 @@ export default function Privacy() {
   const [loginLogs, setLoginLogs] = useState([])
   const [actionLogs, setActionLogs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loginTotal, setLoginTotal] = useState(0)
+  const [actionTotal, setActionTotal] = useState(0)
 
   useEffect(() => {
     Promise.all([
-      getMyLoginLogs({ page_size: 20 }),
-      getMyActionLogs({ page_size: 20 }),
+      getMyLoginLogs({ page: 1, page_size: 20 }),
+      getMyActionLogs({ page: 1, page_size: 20 }),
     ]).then(([lRes, aRes]) => {
-      setLoginLogs(lRes.data.data?.list || lRes.data.data || [])
-      setActionLogs(aRes.data.data?.list || aRes.data.data || [])
+      const lData = lRes.data.data || {}
+      const aData = aRes.data.data || {}
+      setLoginLogs(lData.list || [])
+      setLoginTotal(lData.total || 0)
+      setActionLogs(aData.list || [])
+      setActionTotal(aData.total || 0)
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const loginColumns = [
     { key: 'created_at', title: '时间', render: (v) => v ? new Date(v).toLocaleString() : '-' },
-    { key: 'success', title: '状态', render: (v) => v ? <Badge type="success">成功</Badge> : <Badge type="danger">失败</Badge> },
+    { key: 'success', title: '状态', render: (v) => v === true ? <Badge type="success">成功</Badge> : <Badge type="danger">失败</Badge> },
     { key: 'ip_address', title: 'IP 地址' },
-    { key: 'location', title: '位置', render: (v) => v || '-' },
     { key: 'user_agent', title: '设备信息', render: (v) => v ? <span className="text-sm">{v.substring(0, 40)}</span> : '-' },
   ]
 
   const actionColumns = [
     { key: 'created_at', title: '时间', render: (v) => v ? new Date(v).toLocaleString() : '-' },
     { key: 'action', title: '操作' },
-    { key: 'resource_type', title: '资源类型', render: (v) => v || '-' },
+    { key: 'target', title: '目标类型', render: (v) => v || '-' },
     { key: 'ip_address', title: 'IP 地址' },
   ]
 
@@ -54,7 +58,6 @@ export default function Privacy() {
           <h1 className="page-title">隐私</h1>
           <p className="page-subtitle">查看你的登录记录和操作日志</p>
         </div>
-        <Button variant="secondary" size="sm">下载数据</Button>
       </div>
 
       <Card>
@@ -72,7 +75,7 @@ export default function Privacy() {
         </CardBody>
       </Card>
 
-      <h2 className="section-header">登录日志</h2>
+      <h2 className="section-header">登录日志 ({loginTotal})</h2>
       <Card>
         <CardHeader icon={EyeIcon} title="最近的登录活动" />
         <CardBody position="top">
@@ -80,7 +83,7 @@ export default function Privacy() {
         </CardBody>
       </Card>
 
-      <h2 className="section-header">操作日志</h2>
+      <h2 className="section-header">操作日志 ({actionTotal})</h2>
       <Card>
         <CardHeader icon={EyeIcon} title="最近的操作活动" />
         <CardBody position="top">

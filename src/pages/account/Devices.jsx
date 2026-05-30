@@ -30,18 +30,24 @@ export default function Devices() {
       const [sRes, cRes] = await Promise.all([getSessions(), getCurrentSession()])
       setSessions(sRes.data.data || [])
       setCurrentSession(cRes.data.data)
-    } catch {} finally {
+    } catch {
+      // ignore
+    } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   const handleRevoke = async (sessionId) => {
     try {
       await revokeSession(sessionId)
       setSessions((prev) => prev.filter((s) => s.session_id !== sessionId))
-    } catch {}
+    } catch {
+      // ignore
+    }
     setConfirmModal(false)
   }
 
@@ -49,7 +55,9 @@ export default function Devices() {
     try {
       await revokeAllSessions()
       await fetchData()
-    } catch {}
+    } catch {
+      // ignore
+    }
     setConfirmModal(false)
   }
 

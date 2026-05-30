@@ -12,7 +12,6 @@ function ConfigIconSvg() {
 }
 
 export default function SecurityConfig() {
-  const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -22,9 +21,10 @@ export default function SecurityConfig() {
   useEffect(() => {
     getSecurityConfig().then((res) => {
       const data = res.data.data || {}
-      setConfig(data)
       setForm(data)
-    }).catch(() => {}).finally(() => setLoading(false))
+    }).catch(() => {
+      // ignore
+    }).finally(() => setLoading(false))
   }, [])
 
   const handleChange = (field, value) => {
@@ -37,7 +37,6 @@ export default function SecurityConfig() {
     setError('')
     try {
       await updateSecurityConfig(form)
-      setConfig(form)
       setSuccess('安全策略已更新')
       showSuccess('安全策略已更新')
       setTimeout(() => setSuccess(''), 3000)

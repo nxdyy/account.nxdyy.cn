@@ -11,6 +11,9 @@ import Login from './pages/auth/Login'
 import Login2FA from './pages/auth/Login2FA'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
+import TermsOfService from './pages/auth/TermsOfService'
+import PrivacyPolicy from './pages/auth/PrivacyPolicy'
+import HelpCenter from './pages/auth/HelpCenter'
 import Overview from './pages/account/Overview'
 import YourInfo from './pages/account/YourInfo'
 import Security from './pages/account/Security'
@@ -53,6 +56,9 @@ export default function App() {
           <Route path="/login/2fa" element={<PageTransition><Login2FA /></PageTransition>} />
           <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
           <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
+          <Route path="/terms" element={<PageTransition><TermsOfService /></PageTransition>} />
+          <Route path="/privacy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
+          <Route path="/help" element={<PageTransition><HelpCenter /></PageTransition>} />
 
           <Route
             element={

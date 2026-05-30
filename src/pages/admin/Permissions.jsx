@@ -1,20 +1,15 @@
 import { useState, useEffect } from 'react'
 import { getPermissions, createPermission, updatePermission, deletePermission } from '../../api/admin'
 import { showError, showSuccess } from '../../store/toastStore'
-import Card, { CardHeader, CardBody } from '../../components/Card'
+import Card, { CardBody } from '../../components/Card'
 import Table from '../../components/Table'
 import Button from '../../components/Button'
 import Modal from '../../components/Modal'
 import { FormGroup, FormLabel, FormInput, FormTextarea } from '../../components/Input'
 import './Admin.css'
 
-function PermissionIconSvg() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-}
-
 export default function Permissions() {
   const [permissions, setPermissions] = useState([])
-  const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ name: '', code: '', description: '' })
@@ -22,16 +17,17 @@ export default function Permissions() {
   const [submitting, setSubmitting] = useState(false)
 
   const fetchData = async () => {
-    setLoading(true)
     try {
       const res = await getPermissions()
       setPermissions(res.data.data || [])
-    } catch {} finally {
-      setLoading(false)
+    } catch {
+      // ignore
     }
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   const openCreate = () => {
     setEditing(null)
@@ -79,7 +75,9 @@ export default function Permissions() {
     try {
       await deletePermission(p.id)
       fetchData()
-    } catch {}
+    } catch {
+      // ignore
+    }
   }
 
   const grouped = permissions.reduce((acc, p) => {
@@ -125,7 +123,7 @@ export default function Permissions() {
             </Card>
           </div>
         ))}
-        {Object.keys(grouped).length === 0 && !loading && (
+        {Object.keys(grouped).length === 0 && (
           <Card>
             <CardBody>
               <div className="empty-state">

@@ -44,6 +44,10 @@ export function oauthRedirect(provider) {
   return client.get(`/auth/oauth/${provider}/redirect`)
 }
 
+export function oauthCallback(provider, params) {
+  return client.get(`/auth/oauth/${provider}/callback`, { params })
+}
+
 export function unbindOAuth(provider) {
   return client.post(`/auth/oauth/${provider}/unbind`)
 }

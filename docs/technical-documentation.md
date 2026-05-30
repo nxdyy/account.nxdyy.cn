@@ -86,7 +86,11 @@ account.nxdyy.cn/
 │   │   │   ├── Login.jsx    # 登录
 │   │   │   ├── Login2FA.jsx # 二步验证
 │   │   │   ├── Register.jsx # 注册
-│   │   │   └── ForgotPassword.jsx # 找回密码
+│   │   │   ├── ForgotPassword.jsx # 找回密码
+│   │   │   ├── TermsOfService.jsx # 服务条款
+│   │   │   ├── PrivacyPolicy.jsx # 隐私政策
+│   │   │   ├── HelpCenter.jsx # 帮助中心
+│   │   │   └── Legal.css    # 法律页面样式
 │   │   ├── account/         # 账户管理页面
 │   │   │   ├── Overview.jsx # 账户概览
 │   │   │   ├── YourInfo.jsx # 个人信息
@@ -294,7 +298,8 @@ account.nxdyy.cn/
 |------|------|------|
 | 认证 | auth.js | 登录、注册、找回密码、Token 刷新 |
 | 用户 | user.js | 用户信息、会话、2FA、日志、安全提醒 |
-| 管理 | admin.js | 用户/角色/权限管理、审计日志、系统配置 |
+| 管理 | admin.js | 用户/角色/权限管理、审计日志、系统配置、SSO客户端、系统运维 |
+| OAuth2 | oauth2.js | OAuth2 授权范围定义和 Scope 选择器 |
 
 ### 5.4 权限系统
 
@@ -309,6 +314,7 @@ account.nxdyy.cn/
 - `admin.sso` - SSO 客户端
 - `admin.log` - 审计日志
 - `system.api` - 系统运维
+- `system.server` - 服务器管理
 
 #### 5.4.2 权限检查
 
@@ -815,4 +821,282 @@ showError('请求失败', {
 
 // 显示错误详情和堆栈
 showError('操作失败', err.stack || err.message)
+```
+
+## 12. 新增功能详解
+
+### 12.1 角色管理增强
+
+#### 12.1.1 角色详情弹窗
+
+角色管理页面支持查看角色详情，包含两个标签页：
+
+- **权限树**: 显示角色的权限 JSON 配置，以格式化方式展示
+- **关联用户**: 显示拥有该角色的所有用户列表
+
+```javascript
+const openDetail = async (role) => {
+  const [permRes, usersRes] = await Promise.all([
+    getRolePermissionsTree(role.id),
+    getRoleUsers(role.id),
+  ])
+  // 同时加载权限树和关联用户
+}
+```
+
+#### 12.1.2 角色状态管理
+
+支持启用/禁用角色，禁用后该角色的权限将不再生效：
+
+```javascript
+export function updateRoleStatus(id, data) {
+  return client.patch(`/admin/roles/${id}/status`, data)
+}
+```
+
+#### 12.1.3 角色关联用户
+
+获取指定角色下的所有用户：
+
+```javascript
+export function getRoleUsers(id) {
+  return client.get(`/admin/roles/${id}/users`)
+}
+```
+
+### 12.2 SSO 客户端管理增强
+
+#### 12.2.1 客户端详情弹窗
+
+SSO 客户端页面支持查看客户端详情，展示：
+
+- Client ID 和 Client Secret（支持一键复制）
+- 回调地址、授权类型、授权范围
+- 客户端状态（启用/禁用）
+- 密钥重新生成功能
+
+#### 12.2.2 密钥重新生成
+
+支持重新生成客户端密钥，旧密钥将立即失效：
+
+```javascript
+export function regenerateSSOClientSecret(id) {
+  return client.post(`/admin/sso/clients/${id}/regenerate-secret`)
+}
+```
+
+#### 12.2.3 客户端状态管理
+
+支持启用/禁用 SSO 客户端：
+
+```javascript
+export function updateSSOClientStatus(id, data) {
+  return client.patch(`/admin/sso/clients/${id}/status`, data)
+}
+```
+
+#### 12.2.4 Scope 选择器组件
+
+SSO 客户端表单使用 Scope 选择器组件，支持分组选择和全选：
+
+```jsx
+import { OAUTH_SCOPES, SCOPE_GROUPS } from '../../api/oauth2'
+
+<ScopeSelector
+  value={form.scopes}
+  onChange={(scopes) => setForm({ ...form, scopes })}
+/>
+```
+
+### 12.3 安全提醒功能
+
+安全设置页面新增安全提醒卡片，显示用户的安全告警：
+
+```javascript
+useEffect(() => {
+  getSecurityAlerts({ page: 1, page_size: 20 }).then((res) => {
+    const data = res.data.data || {}
+    setAlerts(data.list || [])
+    setAlertsTotal(data.total || 0)
+  })
+}, [])
+```
+
+支持标记告警为已读：
+
+```javascript
+export function markAlertRead(id) {
+  return client.post(`/security/alerts/${id}/read`)
+}
+```
+
+### 12.4 审计日志增强
+
+#### 12.4.1 分页和筛选
+
+审计日志页面支持分页和用户 ID 筛选：
+
+```javascript
+const [page, setPage] = useState(1)
+const [userId, setUserId] = useState('')
+const pageSize = 20
+
+const fetchData = () => {
+  const params = { page, page_size: pageSize }
+  if (userId) params.user_id = userId
+  fetcher(params).then(...)
+}
+```
+
+#### 12.4.2 标签页切换
+
+支持在登录日志和操作日志之间切换：
+
+```jsx
+<Button variant={tab === 'login' ? 'primary' : 'secondary'} onClick={() => setTab('login')}>
+  登录日志
+</Button>
+<Button variant={tab === 'action' ? 'primary' : 'secondary'} onClick={() => setTab('action')}>
+  操作日志
+</Button>
+```
+
+#### 12.4.3 登录状态字段说明
+
+登录日志 API 实际返回的状态字段为布尔值 `success`（`true` 表示成功，`false` 表示失败），前端渲染时据此显示状态标签：
+
+```javascript
+const loginColumns = [
+  { key: 'success', title: '状态', render: (v) => v === true ? <Badge type="success">成功</Badge> : <Badge type="danger">失败</Badge> },
+]
+```
+
+### 12.5 系统运维功能
+
+#### 12.5.1 服务器重启
+
+系统运维页面支持重启服务器（需要 `system.server.restart` 权限）：
+
+```javascript
+export function restartServer() {
+  return client.post('/admin/system/restart')
+}
+```
+
+重启前需要二次确认：
+
+```jsx
+<Modal open={restartConfirm} title="确认重启服务器">
+  <p>确认要重启服务器吗？此操作将导致所有用户暂时无法访问系统。</p>
+  <Button variant="danger" onClick={handleRestart}>确认重启</Button>
+</Modal>
+```
+
+#### 12.5.2 API 映射重载
+
+支持重新加载 API 权限映射缓存：
+
+```javascript
+export function reloadApiMappings() {
+  return client.post('/admin/system/api-mappings/reload')
+}
+```
+
+### 12.6 管理仪表盘增强
+
+管理仪表盘新增最近操作表格，展示最近的登录和操作记录：
+
+```javascript
+useEffect(() => {
+  Promise.all([
+    getDashboard().then(...),
+    getLoginLogs({ page: 1, page_size: 5 }).then(...),
+    getActionLogs({ page: 1, page_size: 5 }).then(...),
+  ])
+}, [])
+```
+
+### 12.7 用户管理增强
+
+#### 12.7.1 用户角色分配
+
+用户管理页面新增用户详情弹窗，支持角色分配和权限覆盖管理：
+
+```javascript
+const openDetail = async (user) => {
+  const [rolesRes, allRolesRes, permRes] = await Promise.all([
+    getUserRoles(user.id),
+    getRoles({ page: 1, page_size: 100 }),
+    getUserPermissionsOverride(user.id),
+  ])
+  setUserRoles(rolesRes.data.data || [])
+  setAllRoles(allRolesRes.data.data?.list || [])
+}
+```
+
+角色分配使用复选框组件，支持多选：
+
+```jsx
+{allRoles.map((role) => (
+  <label key={role.id} className="form-checkbox">
+    <input
+      type="checkbox"
+      checked={userRoles.some((r) => r.id === role.id)}
+      onChange={() => handleRoleToggle(role.id)}
+    />
+    <span>{role.name} <span className="text-secondary">{role.code}</span></span>
+  </label>
+))}
+```
+
+保存角色分配：
+
+```javascript
+await apiSetUserRoles(detailUser.id, { role_ids: userRoles.map((r) => r.id) })
+```
+
+#### 12.7.2 用户权限覆盖
+
+支持为用户设置独立的权限覆盖 JSON：
+
+```javascript
+const handleSavePermissions = async () => {
+  let jsonData = null
+  if (permissionsJson.trim()) {
+    jsonData = JSON.parse(permissionsJson.trim())
+  }
+  await setUserPermissionsOverride(detailUser.id, { permissions_json: jsonData })
+}
+```
+
+#### 12.7.3 用户列表角色展示
+
+用户列表表格新增角色列，展示用户关联的角色名称：
+
+```javascript
+const columns = [
+  { key: 'roles', title: '角色', render: (v) => v && v.length > 0 ? v.map((r) => r.name).join(', ') : '无' },
+]
+```
+
+### 12.8 隐私页面增强
+
+隐私页面新增日志数量统计和格式化表格：
+
+```jsx
+<h2 className="section-header">登录日志 ({loginTotal})</h2>
+<Table columns={loginColumns} data={loginLogs} emptyText="暂无登录记录" />
+
+<h2 className="section-header">操作日志 ({actionTotal})</h2>
+<Table columns={actionColumns} data={actionLogs} emptyText="暂无操作记录" />
+```
+
+### 12.8 OAuth 回调支持
+
+认证模块新增 OAuth 回调函数：
+
+```javascript
+export function oauthCallback(provider, params) {
+  return client.get(`/auth/oauth/${provider}/callback`, { params })
+}
 ```

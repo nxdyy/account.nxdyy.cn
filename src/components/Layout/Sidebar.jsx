@@ -144,8 +144,6 @@ export default function Sidebar({ isCollapsed = false }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef(null)
 
-  if (!isAuthenticated) return null
-
   const initials = user
     ? (user.nickname || user.username || user.email || '?').charAt(0).toUpperCase()
     : '?'
@@ -178,6 +176,8 @@ export default function Sidebar({ isCollapsed = false }) {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isUserMenuOpen])
+
+  if (!isAuthenticated) return null
 
   const isActive = (path) => {
     if (path === '/account') {

@@ -32,8 +32,8 @@ export function getMyActionLogs(params) {
   return client.get('/logs/actions/me', { params })
 }
 
-export function getSecurityAlerts() {
-  return client.get('/security/alerts/me')
+export function getSecurityAlerts(params) {
+  return client.get('/security/alerts/me', { params })
 }
 
 export function markAlertRead(id) {
