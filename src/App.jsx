@@ -10,6 +10,7 @@ import ToastContainer from './components/Toast'
 import Login from './pages/auth/Login'
 import Login2FA from './pages/auth/Login2FA'
 import Register from './pages/auth/Register'
+import VerifyEmail from './pages/auth/VerifyEmail'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import TermsOfService from './pages/auth/TermsOfService'
 import PrivacyPolicy from './pages/auth/PrivacyPolicy'
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
           <Route path="/login/2fa" element={<PageTransition><Login2FA /></PageTransition>} />
           <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+          <Route path="/verify-email" element={<PageTransition><VerifyEmail /></PageTransition>} />
           <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
           <Route path="/terms" element={<PageTransition><TermsOfService /></PageTransition>} />
           <Route path="/privacy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />

@@ -5,7 +5,7 @@ import Card, { CardBody } from '../../components/Card'
 import Table, { Badge } from '../../components/Table'
 import Button from '../../components/Button'
 import Modal from '../../components/Modal'
-import { FormGroup, FormLabel, FormInput, FormTextarea } from '../../components/Input'
+import { FormGroup, FormLabel, FormInput, FormTextarea, FormCheckbox } from '../../components/Input'
 import './Admin.css'
 
 function RefreshIcon() {
@@ -28,7 +28,11 @@ export default function Users() {
   const pageSize = 15
   const [modalOpen, setModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [form, setForm] = useState({ username: '', email: '', password: '', nickname: '', phone: '' })
+  const [form, setForm] = useState({
+    username: '', email: '', password: '', nickname: '', phone: '',
+    avatar: '', is_active: true, email_verified: false, is_deleted: false,
+    twofa_enabled: false, locked_until: '', role_ids: [], permissions_json: ''
+  })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -66,15 +70,41 @@ export default function Users() {
 
   const openCreate = () => {
     setEditingUser(null)
-    setForm({ username: '', email: '', password: '', nickname: '', phone: '' })
+    setForm({
+      username: '', email: '', password: '', nickname: '', phone: '',
+      avatar: '', is_active: true, email_verified: false, is_deleted: false,
+      twofa_enabled: false, locked_until: '', role_ids: [], permissions_json: ''
+    })
     setError('')
     setModalOpen(true)
   }
 
-  const openEdit = (user) => {
+  const openEdit = async (user) => {
     setEditingUser(user)
-    setForm({ username: user.username, email: user.email, password: '', nickname: user.nickname || '', phone: user.phone || '' })
+    setForm({
+      username: user.username || '',
+      email: user.email || '',
+      password: '',
+      nickname: user.nickname || '',
+      phone: user.phone || '',
+      avatar: user.avatar || '',
+      is_active: user.is_active !== false,
+      email_verified: user.email_verified || false,
+      is_deleted: user.is_deleted || false,
+      twofa_enabled: user.twofa_enabled || false,
+      locked_until: user.locked_until ? user.locked_until.slice(0, 16) : '',
+      role_ids: user.roles ? user.roles.map((r) => r.id) : [],
+      permissions_json: user.permissions_json ? JSON.stringify(user.permissions_json, null, 2) : ''
+    })
     setError('')
+    if (allRoles.length === 0) {
+      try {
+        const res = await getRoles({ page: 1, page_size: 100 })
+        setAllRoles(res.data.data?.list || [])
+      } catch {
+        // ignore
+      }
+    }
     setModalOpen(true)
   }
 
@@ -109,18 +139,38 @@ export default function Users() {
     setSubmitting(true)
     setError('')
     try {
+      const payload = { ...form }
       if (editingUser) {
-        await updateUser(editingUser.id, form)
+        delete payload.password
+        if (payload.locked_until === '') payload.locked_until = null
+        if (payload.permissions_json.trim()) {
+          payload.permissions_json = JSON.parse(payload.permissions_json.trim())
+        } else {
+          payload.permissions_json = null
+        }
+        await updateUser(editingUser.id, payload)
         showSuccess('用户已更新')
       } else {
-        await createUser(form)
+        if (payload.permissions_json.trim()) {
+          payload.permissions_json = JSON.parse(payload.permissions_json.trim())
+        } else {
+          delete payload.permissions_json
+        }
+        delete payload.is_active
+        delete payload.email_verified
+        delete payload.is_deleted
+        delete payload.twofa_enabled
+        delete payload.locked_until
+        await createUser(payload)
         showSuccess('用户已创建')
       }
       setModalOpen(false)
       fetchUsers()
     } catch (err) {
       let msg
-      if (!err.response) {
+      if (err instanceof SyntaxError) {
+        msg = 'JSON 格式错误，请检查权限覆盖输入'
+      } else if (!err.response) {
         msg = '无法连接到服务器，请检查网络连接'
       } else {
         msg = err.response.data?.message || '操作失败'
@@ -306,6 +356,85 @@ export default function Users() {
           <FormLabel>手机号码</FormLabel>
           <FormInput value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="请输入手机号码（可选）" />
         </FormGroup>
+        <FormGroup>
+          <FormLabel>头像 URL</FormLabel>
+          <FormInput value={form.avatar} onChange={(e) => setForm({ ...form, avatar: e.target.value })} placeholder="请输入头像地址（可选）" />
+        </FormGroup>
+        {editingUser && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-base)' }}>
+              <FormCheckbox
+                id="is_active"
+                label="启用账号"
+                checked={form.is_active}
+                onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+              />
+              <FormCheckbox
+                id="email_verified"
+                label="邮箱已验证"
+                checked={form.email_verified}
+                onChange={(e) => setForm({ ...form, email_verified: e.target.checked })}
+              />
+              <FormCheckbox
+                id="is_deleted"
+                label="标记删除"
+                checked={form.is_deleted}
+                onChange={(e) => setForm({ ...form, is_deleted: e.target.checked })}
+              />
+              <FormCheckbox
+                id="twofa_enabled"
+                label="二步验证"
+                checked={form.twofa_enabled}
+                onChange={(e) => setForm({ ...form, twofa_enabled: e.target.checked })}
+              />
+            </div>
+            <FormGroup>
+              <FormLabel>锁定截止时间</FormLabel>
+              <FormInput
+                type="datetime-local"
+                value={form.locked_until}
+                onChange={(e) => setForm({ ...form, locked_until: e.target.value })}
+              />
+              <div className="form-hint">留空表示不锁定</div>
+            </FormGroup>
+            <FormGroup>
+              <FormLabel>角色分配</FormLabel>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)', maxHeight: 200, overflow: 'auto', padding: 'var(--spacing-sm)', background: 'var(--color-sidebar-bg)', borderRadius: 'var(--radius-sm)' }}>
+                {allRoles.length > 0 ? allRoles.map((role) => (
+                  <label key={role.id} className="form-checkbox" style={{ cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.role_ids.includes(role.id)}
+                      onChange={() => {
+                        const ids = form.role_ids.includes(role.id)
+                          ? form.role_ids.filter((id) => id !== role.id)
+                          : [...form.role_ids, role.id]
+                        setForm({ ...form, role_ids: ids })
+                      }}
+                    />
+                    <span className="form-checkbox-label">
+                      <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{role.name}</span>
+                      <span className="text-secondary" style={{ fontSize: 'var(--font-size-sm)', marginLeft: 'var(--spacing-sm)' }}>{role.code}</span>
+                    </span>
+                  </label>
+                )) : (
+                  <span className="text-secondary">暂无可用角色</span>
+                )}
+              </div>
+            </FormGroup>
+            <FormGroup>
+              <FormLabel>权限覆盖 JSON</FormLabel>
+              <FormTextarea
+                value={form.permissions_json}
+                onChange={(e) => setForm({ ...form, permissions_json: e.target.value })}
+                placeholder='{"admin": {"_enabled": true, "user": true}}'
+                rows={6}
+                style={{ fontFamily: 'monospace', fontSize: 'var(--font-size-sm)' }}
+              />
+              <div className="form-hint">留空表示不设置权限覆盖。请输入有效的 JSON 格式。</div>
+            </FormGroup>
+          </>
+        )}
       </Modal>
 
       <Modal

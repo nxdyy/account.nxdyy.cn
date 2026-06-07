@@ -33,16 +33,20 @@ export default function Login() {
         navigate('/account')
       }
     } catch (err) {
-      let msg
       if (!err.response) {
-        // 网络错误（无响应）
-        msg = '无法连接到服务器，请检查网络连接'
-      } else if (err.response.status === 401) {
-        // 认证失败（账号或密码错误）
-        msg = err.response.data?.message || '登录失败，请检查账号和密码'
+        showError('无法连接到服务器，请检查网络连接')
+        return
+      }
+      const data = err.response.data
+      if (data?.data?.need_verify) {
+        navigate('/verify-email', { state: { username: form.username, email: data?.data?.email } })
+        return
+      }
+      let msg
+      if (err.response.status === 401) {
+        msg = data?.message || '登录失败，请检查账号和密码'
       } else {
-        // 其他错误
-        msg = err.response.data?.message || '登录失败，请稍后重试'
+        msg = data?.message || '登录失败，请稍后重试'
       }
       showError(msg)
     }

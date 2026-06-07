@@ -32,9 +32,15 @@ export default function Register() {
     }
     setLoading(true)
     try {
-      await register({ username: form.username, email: form.email, phone: form.phone || undefined, password: form.password })
-      showSuccess('注册成功，请验证你的邮箱')
-      setStep(2)
+      const res = await register({ username: form.username, email: form.email, phone: form.phone || undefined, password: form.password })
+      const data = res.data.data
+      if (data?.need_verify) {
+        showSuccess('注册成功，请验证你的邮箱')
+        setStep(2)
+      } else {
+        showSuccess('注册成功')
+        setStep(3)
+      }
     } catch (err) {
       let msg
       if (!err.response) {
@@ -70,7 +76,7 @@ export default function Register() {
     e.preventDefault()
     setLoading(true)
     try {
-      await confirmRegister({ email: form.email, code })
+      await confirmRegister({ username: form.username, code })
       showSuccess('帐户激活成功')
       setStep(3)
     } catch (err) {

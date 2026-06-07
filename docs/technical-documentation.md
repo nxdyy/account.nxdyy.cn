@@ -1018,7 +1018,46 @@ useEffect(() => {
 
 ### 12.7 用户管理增强
 
-#### 12.7.1 用户角色分配
+#### 12.7.1 用户编辑增强
+
+用户编辑弹窗支持完整的用户信息修改，适配 `PUT /admin/users/:id` 接口：
+
+**支持字段**:
+- 基础信息：用户名、邮箱、昵称、手机号码、头像 URL
+- 状态控制：启用账号、邮箱已验证、标记删除、二步验证
+- 锁定设置：锁定截止时间（`datetime-local` 输入）
+- 角色分配：多选框选择角色
+- 权限覆盖：JSON 格式输入权限覆盖配置
+
+```javascript
+const openEdit = async (user) => {
+  setForm({
+    username: user.username || '',
+    email: user.email || '',
+    nickname: user.nickname || '',
+    phone: user.phone || '',
+    avatar: user.avatar || '',
+    is_active: user.is_active !== false,
+    email_verified: user.email_verified || false,
+    is_deleted: user.is_deleted || false,
+    twofa_enabled: user.twofa_enabled || false,
+    locked_until: user.locked_until ? user.locked_until.slice(0, 16) : '',
+    role_ids: user.roles ? user.roles.map((r) => r.id) : [],
+    permissions_json: user.permissions_json ? JSON.stringify(user.permissions_json, null, 2) : ''
+  })
+  // 自动加载角色列表（如果未加载）
+  if (allRoles.length === 0) {
+    const res = await getRoles({ page: 1, page_size: 100 })
+    setAllRoles(res.data.data?.list || [])
+  }
+}
+```
+
+提交时自动处理字段转换：
+- `locked_until` 为空字符串时转换为 `null`
+- `permissions_json` 字符串解析为 JSON 对象，空值转换为 `null`
+
+#### 12.7.2 用户角色分配
 
 用户管理页面新增用户详情弹窗，支持角色分配和权限覆盖管理：
 
@@ -1055,7 +1094,7 @@ const openDetail = async (user) => {
 await apiSetUserRoles(detailUser.id, { role_ids: userRoles.map((r) => r.id) })
 ```
 
-#### 12.7.2 用户权限覆盖
+#### 12.7.3 用户权限覆盖
 
 支持为用户设置独立的权限覆盖 JSON：
 
@@ -1069,7 +1108,7 @@ const handleSavePermissions = async () => {
 }
 ```
 
-#### 12.7.3 用户列表角色展示
+#### 12.7.4 用户列表角色展示
 
 用户列表表格新增角色列，展示用户关联的角色名称：
 
@@ -1091,7 +1130,73 @@ const columns = [
 <Table columns={actionColumns} data={actionLogs} emptyText="暂无操作记录" />
 ```
 
-### 12.8 OAuth 回调支持
+### 12.9 邮箱验证流程
+
+#### 12.9.1 注册时的邮箱验证
+
+注册成功后，API 返回 `need_verify` 字段指示是否需要邮箱验证：
+
+```javascript
+const res = await register({ username, email, password })
+const data = res.data.data
+if (data?.need_verify) {
+  // 引导用户到邮箱验证页面
+  setStep(2) // 注册页面内嵌验证流程
+} else {
+  // 无需验证，直接完成注册
+  setStep(3)
+}
+```
+
+#### 12.9.2 登录时的邮箱未验证处理
+
+登录时如果邮箱未验证，API 返回 `code: 1001` 和 `need_verify: true`：
+
+```javascript
+try {
+  const result = await login(username, password)
+} catch (err) {
+  const data = err.response.data
+  if (data?.data?.need_verify) {
+    // 跳转到邮箱验证页面，通过用户名发送验证码
+    navigate('/verify-email', { state: { username, email: data?.data?.email } })
+    return
+  }
+  // 其他错误处理...
+}
+```
+
+#### 12.9.3 邮箱验证页面
+
+独立的邮箱验证页面 `/verify-email` 支持通过用户名发送验证码：
+
+```javascript
+// 发送验证码（通过用户名，不暴露邮箱地址）
+await sendRegisterCode({ username })
+
+// 确认验证（优先使用用户名，回退到邮箱）
+const params = { code }
+if (username) {
+  params.username = username
+} else {
+  params.email = email
+}
+await confirmRegister(params)
+```
+
+验证页面接收 `location.state` 传递的用户名和邮箱：
+
+```javascript
+const { username, email } = location.state || {}
+```
+
+流程分为两步：
+1. 点击发送验证码按钮，通过用户名调用 `POST /auth/register/verify-code`
+2. 输入收到的验证码，调用 `POST /auth/register/confirm` 完成验证
+
+确认接口支持通过 `username` 或 `email` 两种方式验证，优先使用用户名（不暴露邮箱地址）。
+
+### 12.10 OAuth 回调支持
 
 认证模块新增 OAuth 回调函数：
 
